@@ -10,5 +10,9 @@ func main() {
 		log.Fatalf("%+v", err)
 	}
 
-	app.Run()
+	err = app.Run()
+
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
 }
