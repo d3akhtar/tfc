@@ -111,6 +111,7 @@ func InitFolderUi(app *tview.Application, pages *tview.Pages, appState *app.Stat
 	homeButton := tview.
 		NewButton("Back To Home").
 		SetSelectedFunc(func() {
+			searchFolderInputField.SetText("")
 			pages.ShowPage(VIEW_NAMES.Home)
 			pages.HidePage(VIEW_NAMES.Folder)
 		})
