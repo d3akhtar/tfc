@@ -1,4 +1,4 @@
-package tui
+package app
 
 var VIEW_NAMES = struct {
 	Home          string

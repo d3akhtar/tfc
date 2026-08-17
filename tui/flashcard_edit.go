@@ -1,10 +1,13 @@
 package tui
 
-import "github.com/rivo/tview"
+import (
+	"github.com/d3akhtar/tfc/app"
+	"github.com/rivo/tview"
+)
 
-func InitFlashcardEditUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
+func InitFlashcardEditUi(appState *app.State) tview.Primitive {
 	return tview.NewBox().
 		SetBorder(true).
-		SetTitle(VIEW_NAMES.FlashcardEdit).
+		SetTitle(app.VIEW_NAMES.FlashcardEdit).
 		SetTitleAlign(tview.AlignLeft)
 }

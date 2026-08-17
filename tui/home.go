@@ -9,14 +9,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-var (
-	mainPageName      = "main"
-	newFolderPageName = "folder"
-)
-
-var formNewFolderName = ""
-
-func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State) tview.Primitive {
+func InitHomeUi(appState *app.State) tview.Primitive {
 	home := tview.NewPages()
 
 	recentSetsStudies := tview.NewTable().
@@ -49,8 +42,7 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 	folders.SetSelectedFunc(func(row, column int) {
 		pos := (row * 3) + column
 		appState.SetSelectedFolder(appState.Folders[pos])
-		pages.ShowPage(VIEW_NAMES.Folder)
-		pages.HidePage(VIEW_NAMES.Library)
+		appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 	})
 
 	for i, loadedFolder := range appState.Folders {
@@ -87,7 +79,7 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 
 	onFolderFormSubmit := func() {
 		home.HidePage(newFolderPageName)
-		app.SetFocus(createFlashcardButton)
+		appState.App.SetFocus(createFlashcardButton)
 
 		appState.Folders = append(appState.Folders, db.Folder{
 			Name:        formNewFolderName,
@@ -109,7 +101,7 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 		AddButton("Save", onFolderFormSubmit).
 		AddButton("Quit", func() {
 			home.HidePage(newFolderPageName)
-			app.SetFocus(createFlashcardButton)
+			appState.App.SetFocus(createFlashcardButton)
 		}).
 		SetButtonsAlign(tview.AlignCenter).
 		SetSubmitFunc(onFolderFormSubmit)
@@ -122,13 +114,12 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 	newFolderFormLayout := NewModal(newFolderForm, 100, 7)
 
 	createFlashcardButton.SetSelectedFunc(func() {
-		pages.ShowPage(VIEW_NAMES.FlashcardEdit)
-		pages.HidePage(VIEW_NAMES.Home)
+		appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
 	})
 
 	createFolderButton.SetSelectedFunc(func() {
 		home.ShowPage(newFolderPageName)
-		app.SetFocus(newFolderForm)
+		appState.App.SetFocus(newFolderForm)
 	})
 
 	create := tview.NewGrid().
@@ -174,7 +165,7 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 	recentSetsStudies.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			app.SetFocus(folders)
+			appState.App.SetFocus(folders)
 		}
 
 		return event
@@ -183,10 +174,10 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 	folders.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			app.SetFocus(create)
+			appState.App.SetFocus(create)
 			return nil
 		case tcell.KeyBacktab:
-			app.SetFocus(recentSetsStudies)
+			appState.App.SetFocus(recentSetsStudies)
 			return nil
 		}
 
@@ -196,13 +187,13 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 	create.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			app.SetFocus(goToLibraryButton)
+			appState.App.SetFocus(goToLibraryButton)
 		case tcell.KeyBacktab:
-			app.SetFocus(folders)
+			appState.App.SetFocus(folders)
 		case tcell.KeyUp:
-			app.SetFocus(createFlashcardButton)
+			appState.App.SetFocus(createFlashcardButton)
 		case tcell.KeyDown:
-			app.SetFocus(createFolderButton)
+			appState.App.SetFocus(createFolderButton)
 		}
 
 		return event
@@ -211,16 +202,16 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State)
 	goToLibraryButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			app.SetFocus(recentSetsStudies)
+			appState.App.SetFocus(recentSetsStudies)
 		case tcell.KeyBacktab:
-			app.SetFocus(create)
+			appState.App.SetFocus(create)
 		}
 
 		return event
 	})
 
 	goToLibraryButton.SetSelectedFunc(func() {
-		pages.SwitchToPage(VIEW_NAMES.Library)
+		appState.Navigation.GoToView(app.VIEW_NAMES.Library)
 	})
 
 	home.AddPage(mainPageName, main, true, true)

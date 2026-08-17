@@ -4,21 +4,29 @@ import (
 	"time"
 
 	"github.com/d3akhtar/tfc/db"
+	"github.com/rivo/tview"
 )
 
 type State struct {
+	App *tview.Application
+
 	RecentlyStudied    []db.Collection
 	Collection         []db.Collection
 	Folders            []db.Folder
 	SelectedCollection db.Collection
 	SelectedFolder     db.Folder
 
+	Navigation *Navigation
+
 	onSelectedCollectionChange []func(db.Collection)
 	onSelectedFolderChange     []func(db.Folder)
 }
 
-func NewAppState() *State {
+func NewAppState(app *tview.Application, views *tview.Pages) *State {
+	nav := NewNavigation(views)
 	return &State{
+		App: app,
+
 		RecentlyStudied: []db.Collection{},
 		Folders: []db.Folder{
 			{
@@ -50,6 +58,8 @@ func NewAppState() *State {
 				},
 			},
 		},
+
+		Navigation: nav,
 	}
 }
 

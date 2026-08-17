@@ -1,10 +1,26 @@
 package tui
 
-import "github.com/rivo/tview"
+import (
+	"github.com/d3akhtar/tfc/db"
+	"github.com/rivo/tview"
+)
 
-type App struct {
-	*tview.Application
-}
+var (
+	filteredCollectionList []db.Collection
+	filteredFolderList     []db.Folder
+)
+
+var (
+	recentOption       = 0
+	alphabeticalOption = 1
+)
+
+var (
+	mainPageName      = "main"
+	newFolderPageName = "folder"
+)
+
+var formNewFolderName = ""
 
 func NewPaddedFrameAllSides(amount int) *tview.Frame {
 	return tview.NewFrame(nil).SetBorders(amount, amount, 0, 0, amount, amount)

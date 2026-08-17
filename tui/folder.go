@@ -12,18 +12,9 @@ import (
 	"github.com/rivo/tview"
 )
 
-var (
-	filteredCollectionList []db.Collection
-)
-
-var (
-	recentOption       = 0
-	alphabeticalOption = 1
-)
-
-func InitFolderUi(app *tview.Application, pages *tview.Pages, appState *app.State) tview.Primitive {
+func InitFolderUi(appState *app.State) tview.Primitive {
 	folder := tview.NewGrid().
-		SetRows(-1, -23, -1).
+		SetRows(-1, -23).
 		SetColumns(-1, -4, 3, -1)
 
 	folderNameLabel := tview.
@@ -108,28 +99,15 @@ func InitFolderUi(app *tview.Application, pages *tview.Pages, appState *app.Stat
 		}).
 		SetFieldWidth(0)
 
-	homeButton := tview.
-		NewButton("Back To Home").
-		SetSelectedFunc(func() {
-			searchFolderInputField.SetText("")
-			pages.ShowPage(VIEW_NAMES.Home)
-			pages.HidePage(VIEW_NAMES.Folder)
-		})
-
-	homeButton.SetBorder(false)
-
 	collectionList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
-			app.SetFocus(homeButton)
-			return nil
 		case tcell.KeyBacktab:
-			app.SetFocus(sortDropdown)
+			appState.App.SetFocus(sortDropdown)
 			return nil
 		}
 
 		if event.Key() == tcell.KeyRune && event.Rune() == '/' {
-			app.SetFocus(searchFolderInputField)
+			appState.App.SetFocus(searchFolderInputField)
 			return nil
 		}
 
@@ -139,10 +117,10 @@ func InitFolderUi(app *tview.Application, pages *tview.Pages, appState *app.Stat
 	sortDropdown.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			app.SetFocus(collectionList)
+			appState.App.SetFocus(collectionList)
 			return nil
 		case tcell.KeyBacktab:
-			app.SetFocus(searchFolderInputField)
+			appState.App.SetFocus(searchFolderInputField)
 			return nil
 		}
 
@@ -152,20 +130,10 @@ func InitFolderUi(app *tview.Application, pages *tview.Pages, appState *app.Stat
 	searchFolderInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			app.SetFocus(sortDropdown)
+			appState.App.SetFocus(sortDropdown)
 			return nil
 		case tcell.KeyEnter:
-			app.SetFocus(collectionList)
-			return nil
-		}
-
-		return event
-	})
-
-	homeButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyBacktab:
-			app.SetFocus(collectionList)
+			appState.App.SetFocus(collectionList)
 			return nil
 		}
 
@@ -177,8 +145,7 @@ func InitFolderUi(app *tview.Application, pages *tview.Pages, appState *app.Stat
 		AddItem(searchFolderInputField, 0, 1, 1, 1, 0, 0, false).
 		AddItem(tview.NewBox(), 0, 2, 1, 1, 0, 0, false).
 		AddItem(sortDropdown, 0, 3, 1, 1, 0, 0, false).
-		AddItem(collectionList, 1, 0, 1, 4, 0, 0, true).
-		AddItem(homeButton, 2, 0, 1, 4, 0, 0, false)
+		AddItem(collectionList, 1, 0, 1, 4, 0, 0, true)
 
 	appState.OnSelectedFolderChange(func(newFolder db.Folder) {
 		filteredCollectionList = slices.Clone(newFolder.Collections)
