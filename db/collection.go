@@ -1,4 +1,4 @@
-package models
+package db
 
 import (
 	"bytes"
@@ -6,7 +6,8 @@ import (
 )
 
 type Collection struct {
-	Flashcards []Flashcard
+	Name       string      `json:"name"`
+	Flashcards []Flashcard `json:"flashcards"`
 }
 
 func (c Collection) String() string {

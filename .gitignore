@@ -33,3 +33,6 @@ go.work.sum
 
 # Debugging stuff
 __debug_bin*
+
+# bin
+tfc

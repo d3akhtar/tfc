@@ -1,4 +1,4 @@
-package models
+package db
 
 import (
 	"bytes"
@@ -6,7 +6,8 @@ import (
 )
 
 type Folder struct {
-	Collections []Collection
+	Name        string       `json:"name"`
+	Collections []Collection `json:"collections"`
 }
 
 func (f Folder) String() string {
