@@ -1,9 +1,13 @@
 package tui
 
-var PAGE_NAMES = struct {
-	Home    string
-	Library string
+var VIEW_NAMES = struct {
+	Home          string
+	Library       string
+	FlashcardEdit string
+	Folder        string
 }{
-	Home:    "Home",
-	Library: "Library",
+	Home:          "Home",
+	Library:       "Library",
+	FlashcardEdit: "FlashcardEdit",
+	Folder:        "Folder",
 }

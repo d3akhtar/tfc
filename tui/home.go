@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 
+	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -12,7 +14,9 @@ var (
 	newFolderPageName = "folder"
 )
 
-func InitHomeUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
+var formNewFolderName = ""
+
+func InitHomeUi(app *tview.Application, pages *tview.Pages, appState *app.State) tview.Primitive {
 	home := tview.NewPages()
 
 	recentSetsStudies := tview.NewTable().
@@ -42,10 +46,17 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
 		SetBorders(false).
 		SetSelectable(true, true)
 
-	for column := range 3 {
-		for row := range 40 {
-			folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ Folder %d,%d", row, column)).SetExpansion(1))
-		}
+	folders.SetSelectedFunc(func(row, column int) {
+		pos := (row * 3) + column
+		appState.SetSelectedFolder(appState.Folders[pos])
+		pages.ShowPage(VIEW_NAMES.Folder)
+		pages.HidePage(VIEW_NAMES.Library)
+	})
+
+	for i, loadedFolder := range appState.Folders {
+		row := i / 3
+		column := i % 3
+		folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1))
 	}
 
 	folders.
@@ -65,20 +76,43 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	createFlashcardButton := tview.NewButton("Flashcard")
 	createFolderButton := tview.NewButton("Folder")
 
-	newFolderForm := tview.NewForm().
-		AddInputField("Name", "", 0, nil, nil).
-		AddButton("Save", func() {
+	newFolderNameInputField := tview.NewInputField().
+		SetLabel("Name: ").
+		SetPlaceholder("Enter new folder name...").
+		SetAcceptanceFunc(func(textToCheck string, lastChar rune) bool {
+			return len(textToCheck) > 0
+		}).SetChangedFunc(func(text string) {
+		formNewFolderName = text
+	})
 
-		}).
+	onFolderFormSubmit := func() {
+		home.HidePage(newFolderPageName)
+		app.SetFocus(createFlashcardButton)
+
+		appState.Folders = append(appState.Folders, db.Folder{
+			Name:        formNewFolderName,
+			Collections: []db.Collection{},
+		})
+
+		newFolderNameInputField.SetText("")
+
+		folders.Clear()
+		for i, loadedFolder := range appState.Folders {
+			row := i / 3
+			column := i % 3
+			folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1))
+		}
+	}
+
+	newFolderForm := tview.NewForm().
+		AddFormItem(newFolderNameInputField).
+		AddButton("Save", onFolderFormSubmit).
 		AddButton("Quit", func() {
 			home.HidePage(newFolderPageName)
 			app.SetFocus(createFlashcardButton)
 		}).
 		SetButtonsAlign(tview.AlignCenter).
-		SetSubmitFunc(func() {
-			home.HidePage(newFolderPageName)
-			app.SetFocus(createFlashcardButton)
-		})
+		SetSubmitFunc(onFolderFormSubmit)
 
 	newFolderForm.
 		SetBorder(true).
@@ -88,7 +122,8 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	newFolderFormLayout := NewModal(newFolderForm, 100, 7)
 
 	createFlashcardButton.SetSelectedFunc(func() {
-		app.SetFocus(createFolderButton)
+		pages.ShowPage(VIEW_NAMES.FlashcardEdit)
+		pages.HidePage(VIEW_NAMES.Home)
 	})
 
 	createFolderButton.SetSelectedFunc(func() {
@@ -116,6 +151,17 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
 
 	goToLibraryButton := tview.NewButton("Go To Library")
 	goToLibrary := NewPaddedFrameAllSides(4).SetPrimitive(goToLibraryButton)
+
+	goToLibrary.
+		SetBorder(true).
+		SetFocusFunc(func() {
+			goToLibrary.SetBorderColor(tcell.ColorGreen)
+			goToLibrary.SetTitleColor(tcell.ColorGreen)
+		}).
+		SetBlurFunc(func() {
+			goToLibrary.SetBorderColor(tcell.ColorWhite)
+			goToLibrary.SetTitleColor(tcell.ColorWhite)
+		})
 
 	main := tview.NewGrid().
 		SetRows(-1, -1, -1).
@@ -174,7 +220,7 @@ func InitHomeUi(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	})
 
 	goToLibraryButton.SetSelectedFunc(func() {
-		pages.SwitchToPage(PAGE_NAMES.Library)
+		pages.SwitchToPage(VIEW_NAMES.Library)
 	})
 
 	home.AddPage(mainPageName, main, true, true)
