@@ -12,5 +12,5 @@ type Folder struct {
 }
 
 func (f Folder) String() string {
-	return fmt.Sprintf("%s | %d Sets", f.Name, len(f.FlashcardSets))
+	return fmt.Sprintf("○ %s | %d Sets | Last Accessed: %s", f.Name, len(f.FlashcardSets), f.LastAccessed.Format(time.RFC822))
 }
