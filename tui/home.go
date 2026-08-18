@@ -9,11 +9,15 @@ import (
 	"github.com/rivo/tview"
 )
 
-func InitHomeUi(appState *app.State) tview.Primitive {
+func InitHomeUi(appState *app.State) {
 	home := tview.NewPages()
 
 	recentSetsStudies := tview.NewTable().
 		SetSelectable(true, false)
+
+	for i, flashcardSet := range appState.RecentlyStudied {
+		recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1))
+	}
 
 	recentSetsStudies.
 		SetFocusFunc(func() {
@@ -31,17 +35,13 @@ func InitHomeUi(appState *app.State) tview.Primitive {
 		SetTitleColor(tcell.ColorGreen).
 		SetBorderPadding(1, 1, 1, 1)
 
-	for i := range 30 {
-		recentSetsStudies.SetCell(i, 0, tview.NewTableCell(fmt.Sprintf("○ Set %d", i)).SetExpansion(1))
-	}
-
 	folders := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, true)
 
 	folders.SetSelectedFunc(func(row, column int) {
 		pos := (row * 3) + column
-		appState.SetSelectedFolder(appState.Folders[pos])
+		appState.SelectedFolder = appState.Folders[pos]
 		appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 	})
 
@@ -82,8 +82,8 @@ func InitHomeUi(appState *app.State) tview.Primitive {
 		appState.App.SetFocus(createFlashcardButton)
 
 		appState.Folders = append(appState.Folders, db.Folder{
-			Name:        formNewFolderName,
-			Collections: []db.Collection{},
+			Name:          formNewFolderName,
+			FlashcardSets: []db.FlashcardSet{},
 		})
 
 		newFolderNameInputField.SetText("")
@@ -217,5 +217,11 @@ func InitHomeUi(appState *app.State) tview.Primitive {
 	home.AddPage(mainPageName, main, true, true)
 	home.AddPage(newFolderPageName, newFolderFormLayout, true, false)
 
-	return home
+	appState.Navigation.AddView(app.VIEW_NAMES.Home, home, true, func() {
+		recentSetsStudies.Clear()
+
+		for i, flashcardSet := range appState.RecentlyStudied {
+			recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1))
+		}
+	})
 }

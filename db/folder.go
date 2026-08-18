@@ -1,21 +1,16 @@
 package db
 
 import (
-	"bytes"
 	"fmt"
+	"time"
 )
 
 type Folder struct {
-	Name        string       `json:"name"`
-	Collections []Collection `json:"collections"`
+	Name          string         `json:"name"`
+	FlashcardSets []FlashcardSet `json:"collections"`
+	LastAccessed  time.Time
 }
 
 func (f Folder) String() string {
-	var out bytes.Buffer
-	for _, c := range f.Collections {
-		fmt.Fprintf(&out, "%s", c)
-		out.WriteString("\n")
-	}
-
-	return out.String()
+	return fmt.Sprintf("%s | %d Sets", f.Name, len(f.FlashcardSets))
 }

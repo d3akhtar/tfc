@@ -5,18 +5,31 @@ import "github.com/rivo/tview"
 type Navigation struct {
 	views   *tview.Pages
 	history []string
+
+	refresh map[string]func()
 }
 
-func NewNavigation(pages *tview.Pages) *Navigation {
+func NewNavigation() *Navigation {
 	return &Navigation{
-		views:   pages,
 		history: []string{},
+		views:   tview.NewPages(),
+
+		refresh: make(map[string]func()),
 	}
 }
 
+func (n *Navigation) Views() *tview.Pages {
+	return n.views
+}
+
+func (n *Navigation) AddView(pageName string, primitive tview.Primitive, visible bool, refresh func()) {
+	n.views.AddPage(pageName, primitive, true, visible)
+	n.refresh[pageName] = refresh
+}
+
 func (n *Navigation) GoToView(pageName string) {
-	n.views.ShowPage(pageName)
-	n.views.HidePage(n.MostRecentlyVisitedViewName())
+	n.showPage(pageName)
+	n.hidePage(n.MostRecentlyVisitedViewName())
 	n.history = append(n.history, pageName)
 }
 
@@ -27,7 +40,7 @@ func (n *Navigation) RevertView() {
 
 	n.views.HidePage(n.MostRecentlyVisitedViewName())
 	n.history = n.history[:len(n.history)-1]
-	n.views.ShowPage(n.MostRecentlyVisitedViewName())
+	n.showPage(n.MostRecentlyVisitedViewName())
 }
 
 func (n *Navigation) MostRecentlyVisitedViewName() string {
@@ -36,4 +49,13 @@ func (n *Navigation) MostRecentlyVisitedViewName() string {
 	} else {
 		return VIEW_NAMES.Home
 	}
+}
+
+func (n *Navigation) showPage(pageName string) {
+	n.views.ShowPage(pageName)
+	n.refresh[pageName]()
+}
+
+func (n *Navigation) hidePage(pageName string) {
+	n.views.HidePage(pageName)
 }

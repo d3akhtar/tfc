@@ -5,9 +5,11 @@ import (
 	"github.com/rivo/tview"
 )
 
-func InitFlashcardEditUi(appState *app.State) tview.Primitive {
-	return tview.NewBox().
+func InitFlashcardEditUi(appState *app.State) {
+	flashcardEdit := tview.NewBox().
 		SetBorder(true).
 		SetTitle(app.VIEW_NAMES.FlashcardEdit).
 		SetTitleAlign(tview.AlignLeft)
+
+	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardEdit, flashcardEdit, false, nil)
 }

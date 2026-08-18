@@ -1,13 +1,17 @@
 package tui
 
 import (
+	"slices"
+	"strings"
+
+	"github.com/d3akhtar/tfc/app"
 	"github.com/d3akhtar/tfc/db"
 	"github.com/rivo/tview"
 )
 
 var (
-	filteredCollectionList []db.Collection
-	filteredFolderList     []db.Folder
+	filteredFlashcardSetList []db.FlashcardSet
+	filteredFolderList       []db.Folder
 )
 
 var (
@@ -21,6 +25,13 @@ var (
 )
 
 var formNewFolderName = ""
+
+func Init(appState *app.State) {
+	InitHomeUi(appState)
+	InitLibraryUi(appState)
+	InitFlashcardEditUi(appState)
+	InitFolderUi(appState)
+}
 
 func NewPaddedFrameAllSides(amount int) *tview.Frame {
 	return tview.NewFrame(nil).SetBorders(amount, amount, 0, 0, amount, amount)
@@ -42,4 +53,30 @@ func NewModal(p tview.Primitive, width, height int) tview.Primitive {
 			AddItem(p, height, 1, true).
 			AddItem(nil, 0, 1, false), width, 1, true).
 		AddItem(nil, 0, 1, false)
+}
+
+func sortFolderCollection(option int, folders []db.Folder) {
+	switch option {
+	case recentOption:
+		slices.SortFunc(folders, func(a, b db.Folder) int {
+			return -a.LastAccessed.Compare(b.LastAccessed)
+		})
+	case alphabeticalOption:
+		slices.SortFunc(folders, func(a, b db.Folder) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+	}
+}
+
+func sortFlashcardSetCollection(option int, flashcardSets []db.FlashcardSet) {
+	switch option {
+	case recentOption:
+		slices.SortFunc(flashcardSets, func(a, b db.FlashcardSet) int {
+			return -a.LastAccessed.Compare(b.LastAccessed)
+		})
+	case alphabeticalOption:
+		slices.SortFunc(flashcardSets, func(a, b db.FlashcardSet) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+	}
 }

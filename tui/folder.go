@@ -12,7 +12,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func InitFolderUi(appState *app.State) tview.Primitive {
+func InitFolderUi(appState *app.State) {
 	folder := tview.NewGrid().
 		SetRows(-1, -23).
 		SetColumns(-1, -4, 3, -1)
@@ -32,46 +32,36 @@ func InitFolderUi(appState *app.State) tview.Primitive {
 		SetFieldBackgroundColor(tcell.ColorGray).
 		SetCurrentOption(0)
 
-	collectionList := tview.NewTable().SetSelectable(true, false).
+	flashcardSetList := tview.NewTable().SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			selectedCollection := appState.SelectedFolder.Collections[pos]
-			selectedCollection.LastAccessed = time.Now()
-			appState.SetSelectedCollection(selectedCollection)
+			selectedFlashcardSet := appState.SelectedFolder.FlashcardSets[pos]
+			selectedFlashcardSet.LastAccessed = time.Now()
+			appState.SelectedFlashcardSet = selectedFlashcardSet
 		})
 
 	sortDropdown.
-		SetSelectedFunc(func(_ string, index int) {
-			switch index {
-			case recentOption:
-				slices.SortFunc(filteredCollectionList, func(a, b db.Collection) int {
-					return a.LastAccessed.Compare(b.LastAccessed)
-				})
-			case alphabeticalOption:
-				slices.SortFunc(filteredCollectionList, func(a, b db.Collection) int {
-					return strings.Compare(a.Name, b.Name)
-				})
-				collectionList.Clear()
-
-				for i, collection := range filteredCollectionList {
-					collectionList.SetCell(
-						i,
-						0,
-						tview.NewTableCell(collection.String()).SetExpansion(1),
-					)
-				}
+		SetSelectedFunc(func(_ string, option int) {
+			sortFlashcardSetCollection(option, filteredFlashcardSetList)
+			flashcardSetList.Clear()
+			for i, flashcardSet := range filteredFlashcardSetList {
+				flashcardSetList.SetCell(
+					i,
+					0,
+					tview.NewTableCell(flashcardSet.String()).SetExpansion(1),
+				)
 			}
 		})
 
-	collectionList.
+	flashcardSetList.
 		SetBorder(true).
 		SetFocusFunc(func() {
-			collectionList.SetBorderColor(tcell.ColorGreen)
-			collectionList.SetTitleColor(tcell.ColorGreen)
+			flashcardSetList.SetBorderColor(tcell.ColorGreen)
+			flashcardSetList.SetTitleColor(tcell.ColorGreen)
 		}).
 		SetBlurFunc(func() {
-			collectionList.SetBorderColor(tcell.ColorWhite)
-			collectionList.SetTitleColor(tcell.ColorWhite)
+			flashcardSetList.SetBorderColor(tcell.ColorWhite)
+			flashcardSetList.SetTitleColor(tcell.ColorWhite)
 		}).
 		SetBorderColor(tcell.ColorGreen).
 		SetTitleColor(tcell.ColorGreen)
@@ -80,17 +70,17 @@ func InitFolderUi(appState *app.State) tview.Primitive {
 		SetLabel("").
 		SetPlaceholder("Search folder...").
 		SetChangedFunc(func(text string) {
-			collectionList.Clear()
-			filteredCollectionList = []db.Collection{}
+			flashcardSetList.Clear()
+			filteredFlashcardSetList = []db.FlashcardSet{}
 
-			for _, collection := range appState.SelectedFolder.Collections {
+			for _, collection := range appState.SelectedFolder.FlashcardSets {
 				if text == "" || strings.Contains(collection.Name, text) {
-					filteredCollectionList = append(filteredCollectionList, collection)
+					filteredFlashcardSetList = append(filteredFlashcardSetList, collection)
 				}
 			}
 
-			for i, collection := range filteredCollectionList {
-				collectionList.SetCell(
+			for i, collection := range filteredFlashcardSetList {
+				flashcardSetList.SetCell(
 					i,
 					0,
 					tview.NewTableCell(collection.String()).SetExpansion(1),
@@ -99,7 +89,7 @@ func InitFolderUi(appState *app.State) tview.Primitive {
 		}).
 		SetFieldWidth(0)
 
-	collectionList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	flashcardSetList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(sortDropdown)
@@ -117,7 +107,7 @@ func InitFolderUi(appState *app.State) tview.Primitive {
 	sortDropdown.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			appState.App.SetFocus(collectionList)
+			appState.App.SetFocus(flashcardSetList)
 			return nil
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(searchFolderInputField)
@@ -133,7 +123,7 @@ func InitFolderUi(appState *app.State) tview.Primitive {
 			appState.App.SetFocus(sortDropdown)
 			return nil
 		case tcell.KeyEnter:
-			appState.App.SetFocus(collectionList)
+			appState.App.SetFocus(flashcardSetList)
 			return nil
 		}
 
@@ -145,23 +135,26 @@ func InitFolderUi(appState *app.State) tview.Primitive {
 		AddItem(searchFolderInputField, 0, 1, 1, 1, 0, 0, false).
 		AddItem(tview.NewBox(), 0, 2, 1, 1, 0, 0, false).
 		AddItem(sortDropdown, 0, 3, 1, 1, 0, 0, false).
-		AddItem(collectionList, 1, 0, 1, 4, 0, 0, true)
+		AddItem(flashcardSetList, 1, 0, 1, 4, 0, 0, true)
 
-	appState.OnSelectedFolderChange(func(newFolder db.Folder) {
-		filteredCollectionList = slices.Clone(newFolder.Collections)
+	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folder, false, func() {
+		searchFolderInputField.SetText("")
 
-		folderNameLabel.SetText(fmt.Sprintf("[ %s ]", newFolder.Name))
+		filteredFlashcardSetList = slices.Clone(appState.SelectedFolder.FlashcardSets)
 
-		collectionList.Clear()
+		option, _ := sortDropdown.GetCurrentOption()
+		sortFlashcardSetCollection(option, filteredFlashcardSetList)
 
-		for i, collection := range newFolder.Collections {
-			collectionList.SetCell(
+		folderNameLabel.SetText(fmt.Sprintf("[ %s ]", appState.SelectedFolder.Name))
+
+		flashcardSetList.Clear()
+
+		for i, flashcardSet := range filteredFlashcardSetList {
+			flashcardSetList.SetCell(
 				i,
 				0,
-				tview.NewTableCell(collection.String()).SetExpansion(1),
+				tview.NewTableCell(flashcardSet.String()).SetExpansion(1),
 			)
 		}
 	})
-
-	return folder
 }
