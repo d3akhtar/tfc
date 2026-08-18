@@ -107,7 +107,7 @@ func InitLibraryUi(appState *app.State) {
 			filteredFolderList = []db.Folder{}
 
 			for _, flashcardSet := range appState.FlashcardSets {
-				if text == "" || strings.Contains(flashcardSet.Name, text) {
+				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
 					filteredFlashcardSetList = append(filteredFlashcardSetList, flashcardSet)
 				}
 			}
@@ -121,7 +121,7 @@ func InitLibraryUi(appState *app.State) {
 			}
 
 			for _, folder := range appState.Folders {
-				if text == "" || strings.Contains(folder.Name, text) {
+				if text == "" || strings.Contains(strings.ToLower(folder.Name), strings.ToLower(text)) {
 					filteredFolderList = append(filteredFolderList, folder)
 				}
 			}

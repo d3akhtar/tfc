@@ -74,7 +74,7 @@ func InitFolderUi(appState *app.State) {
 			filteredFlashcardSetList = []db.FlashcardSet{}
 
 			for _, collection := range appState.SelectedFolder.FlashcardSets {
-				if text == "" || strings.Contains(collection.Name, text) {
+				if text == "" || strings.Contains(strings.ToLower(collection.Name), strings.ToLower(text)) {
 					filteredFlashcardSetList = append(filteredFlashcardSetList, collection)
 				}
 			}
