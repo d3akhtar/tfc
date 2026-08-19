@@ -34,7 +34,7 @@ func InitHomeUi(appState *app.State) {
 			recentSetsStudies.SetTitleColor(tcell.ColorWhite)
 		}).
 		SetBorder(true).
-		SetTitle("Recents Sets Studies").
+		SetTitle("Recent Sets Studies").
 		SetTitleAlign(tview.AlignLeft).
 		SetBorderColor(tcell.ColorGreen).
 		SetTitleColor(tcell.ColorGreen).

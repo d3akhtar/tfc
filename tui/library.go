@@ -40,7 +40,7 @@ func InitLibraryUi(appState *app.State) {
 			selectedFlashcardSet := filteredFlashcardSetList[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
 			appState.SelectedFlashcardSet = selectedFlashcardSet
-			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
+			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
 	sortDropdown.

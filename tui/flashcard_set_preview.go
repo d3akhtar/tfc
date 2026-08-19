@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
 	"github.com/d3akhtar/tfc/db"
@@ -34,7 +35,9 @@ func InitFlashcardSetPreview(appState *app.State) {
 			SetBlurFunc(func() {
 				layout.SetBorderColor(tcell.ColorWhite)
 				layout.SetTitleColor(tcell.ColorWhite)
-			})
+			}).
+			SetTitle(strconv.Itoa((pos + 1))).
+			SetTitleAlign(tview.AlignLeft)
 
 		question := tview.NewTextView().
 			SetText(flashcard.Question)
@@ -44,6 +47,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 		question.
 			SetBorder(true).
+			SetBorderPadding(1, 1, 1, 1).
 			SetFocusFunc(func() {
 				question.SetBorderColor(tcell.ColorGreen)
 				question.SetTitleColor(tcell.ColorGreen)
@@ -55,6 +59,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 		answer.
 			SetBorder(true).
+			SetBorderPadding(1, 1, 1, 1).
 			SetFocusFunc(func() {
 				answer.SetBorderColor(tcell.ColorGreen)
 				answer.SetTitleColor(tcell.ColorGreen)
@@ -108,9 +113,6 @@ func InitFlashcardSetPreview(appState *app.State) {
 				if event.Rune() == 'q' {
 					appState.SetFocus(layout)
 				}
-			case tcell.KeyEnter:
-				row, col := question.GetScrollOffset()
-				question.ScrollTo(row+1, col)
 			}
 
 			return event
@@ -273,6 +275,8 @@ func InitFlashcardSetPreview(appState *app.State) {
 	})
 
 	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardSetPreview, flashcardSetPreview, false, func() {
+		maxFlashcardsShownInPreviewFlashcardList = min(4, len(appState.SelectedFlashcardSet.Flashcards))
+
 		var col tcell.Color
 		var trackProgressButtonTextPrefix string
 		if appState.SelectedFlashcardSet.TrackProgress {

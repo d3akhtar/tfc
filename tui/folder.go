@@ -133,7 +133,7 @@ func InitFolderUi(appState *app.State) {
 	folder.
 		AddItem(folderNameLabel, 0, 0, 1, 1, 0, 0, false).
 		AddItem(searchFolderInputField, 0, 1, 1, 1, 0, 0, false).
-		AddItem(nil, 0, 2, 1, 1, 0, 0, false).
+		AddItem(tview.NewBox(), 0, 2, 1, 1, 0, 0, false).
 		AddItem(sortDropdown, 0, 3, 1, 1, 0, 0, false).
 		AddItem(flashcardSetList, 1, 0, 1, 4, 0, 0, true)
 
