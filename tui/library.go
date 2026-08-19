@@ -30,7 +30,7 @@ func InitLibraryUi(appState *app.State) {
 			pos := row
 			selectedFolder := filteredFolderList[pos]
 			selectedFolder.LastAccessed = time.Now()
-			appState.SelectedFolder = selectedFolder
+			appState.SelectedFolder = &selectedFolder
 			appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 		})
 
@@ -39,7 +39,7 @@ func InitLibraryUi(appState *app.State) {
 			pos := row
 			selectedFlashcardSet := filteredFlashcardSetList[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
-			appState.SelectedFlashcardSet = selectedFlashcardSet
+			appState.SelectedFlashcardSet = &selectedFlashcardSet
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 

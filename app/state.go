@@ -13,8 +13,8 @@ type State struct {
 	RecentlyStudied      []db.FlashcardSet
 	FlashcardSets        []db.FlashcardSet
 	Folders              []db.Folder
-	SelectedFlashcardSet db.FlashcardSet
-	SelectedFolder       db.Folder
+	SelectedFlashcardSet *db.FlashcardSet
+	SelectedFolder       *db.Folder
 
 	Navigation *Navigation
 }

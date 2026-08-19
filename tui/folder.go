@@ -19,7 +19,6 @@ func InitFolderUi(appState *app.State) {
 
 	folderNameLabel := tview.
 		NewTextView().
-		SetText(fmt.Sprintf("[ %s ]", appState.SelectedFolder.Name)).
 		SetScrollable(false).
 		SetSize(2, 30)
 
@@ -37,7 +36,7 @@ func InitFolderUi(appState *app.State) {
 			pos := row
 			selectedFlashcardSet := appState.SelectedFolder.FlashcardSets[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
-			appState.SelectedFlashcardSet = selectedFlashcardSet
+			appState.SelectedFlashcardSet = &selectedFlashcardSet
 		})
 
 	sortDropdown.

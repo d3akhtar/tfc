@@ -178,7 +178,6 @@ func InitFlashcardSetPreview(appState *app.State) {
 		SetRows(-1, -30, -3)
 
 	flashcardSetNameLabel := tview.NewTextView().
-		SetText(fmt.Sprintf("[ %s ]", appState.SelectedFlashcardSet.Name)).
 		SetScrollable(false).
 		SetSize(2, 30)
 
@@ -233,10 +232,49 @@ func InitFlashcardSetPreview(appState *app.State) {
 		AddItem(nil, 2, 1, false).
 		AddItem(settingsButton, 0, 1, false)
 
-	settings := tview.NewBox().
-		SetTitle("Settings")
+	shuffleCheckbox := tview.NewCheckbox().
+		SetLabel("Shuffle").
+		SetChangedFunc(func(checked bool) {
+			appState.SelectedFlashcardSet.SetShuffle(checked)
+			if checked {
+				window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
-	settingsModal := NewModal(settings, 20, 50)
+				for i := window.Start; i <= window.End; i++ {
+					activeFlashcardPrimitives[i].Layout.
+						SetTitle(strconv.Itoa(i + 1))
+
+					activeFlashcardPrimitives[i].Question.SetText(window.Collection[i].Question)
+					activeFlashcardPrimitives[i].Answer.SetText(window.Collection[i].Answer)
+				}
+
+				lastSelectedFlashcardPrimitive = 0
+			}
+		}).
+		SetCheckedString("✔")
+
+	frontDropdown := tview.NewDropDown().
+		SetLabel("Front").
+		SetOptions([]string{"Question", "Answer"}, func(_ string, option int) {
+			appState.SelectedFlashcardSet.Front = db.FlashcardFront(option)
+		})
+
+	settings := tview.NewForm().
+		SetButtonsAlign(tview.AlignCenter).
+		AddFormItem(shuffleCheckbox).
+		AddFormItem(frontDropdown).
+		AddButton("Reset Progress", func() {
+
+		}).
+		AddButton("Close", func() {
+			flashcardSetPreview.HidePage("settings")
+			appState.SetFocus(settingsButton)
+		})
+
+	settings.
+		SetBorder(true).
+		SetBorderPadding(1, 1, 3, 3)
+
+	settingsModal := NewModal(settings, 40, 10)
 
 	preview.
 		AddItem(flashcardSetNameLabel, 0, 0, 1, 1, 0, 0, false).
@@ -245,6 +283,10 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	flashcardSetPreview.AddPage("main", preview, true, true)
 	flashcardSetPreview.AddPage("settings", settingsModal, true, false)
+
+	settingsButton.SetSelectedFunc(func() {
+		flashcardSetPreview.ShowPage("settings")
+	})
 
 	flashcardList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout.HasFocus() {
@@ -314,7 +356,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardSetPreview, flashcardSetPreview, false, func() {
 		maxFlashcardsShownInPreviewFlashcardList = min(4, len(appState.SelectedFlashcardSet.Flashcards))
 
-		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.Flashcards)
+		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
 		var col tcell.Color
 		var trackProgressButtonTextPrefix string
@@ -337,11 +379,14 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 		for i := window.Start; i <= window.End; i++ {
 			flashcardList.AddItem(
-				newFlashcardPrimitive(appState.SelectedFlashcardSet.Flashcards[i], i),
+				newFlashcardPrimitive(window.Collection[i], i),
 				0,
 				1,
 				false,
 			)
 		}
+
+		shuffleCheckbox.SetChecked(appState.SelectedFlashcardSet.Shuffled())
+		frontDropdown.SetCurrentOption(int(appState.SelectedFlashcardSet.Front))
 	})
 }

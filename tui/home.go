@@ -16,7 +16,7 @@ func InitHomeUi(appState *app.State) {
 		SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			appState.SelectedFlashcardSet = appState.RecentlyStudied[pos]
+			appState.SelectedFlashcardSet = &appState.RecentlyStudied[pos]
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
@@ -46,7 +46,7 @@ func InitHomeUi(appState *app.State) {
 
 	folders.SetSelectedFunc(func(row, column int) {
 		pos := (row * 3) + column
-		appState.SelectedFolder = appState.Folders[pos]
+		appState.SelectedFolder = &appState.Folders[pos]
 		appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 	})
 
