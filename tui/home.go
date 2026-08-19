@@ -13,7 +13,12 @@ func InitHomeUi(appState *app.State) {
 	home := tview.NewPages()
 
 	recentSetsStudies := tview.NewTable().
-		SetSelectable(true, false)
+		SetSelectable(true, false).
+		SetSelectedFunc(func(row, _ int) {
+			pos := row
+			appState.SelectedFlashcardSet = appState.RecentlyStudied[pos]
+			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
+		})
 
 	for i, flashcardSet := range appState.RecentlyStudied {
 		recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1))

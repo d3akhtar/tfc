@@ -45,6 +45,7 @@ func Init(appState *app.State) {
 	InitHomeUi(appState)
 	InitLibraryUi(appState)
 	InitFlashcardEditUi(appState)
+	InitFlashcardSetPreview(appState)
 	InitFolderUi(appState)
 }
 

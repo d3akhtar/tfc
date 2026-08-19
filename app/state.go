@@ -26,8 +26,25 @@ func NewAppState(app *tview.Application) *State {
 
 		RecentlyStudied: []db.FlashcardSet{
 			{
-				Name:         "Stew C",
-				Flashcards:   []db.Flashcard{},
+				Name: "Stew C",
+				Flashcards: []db.Flashcard{
+					{
+						Question: "What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? ",
+						Answer:   "2",
+					},
+					{
+						Question: "What is 1+2?",
+						Answer:   "3",
+					},
+					{
+						Question: "What is 1+3?",
+						Answer:   "4",
+					},
+					{
+						Question: "What is 1+3?",
+						Answer:   "4",
+					},
+				},
 				LastAccessed: time.Now(),
 			},
 			{

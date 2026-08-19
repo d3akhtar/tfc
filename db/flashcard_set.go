@@ -6,9 +6,10 @@ import (
 )
 
 type FlashcardSet struct {
-	Name         string      `json:"name"`
-	Flashcards   []Flashcard `json:"flashcards"`
-	LastAccessed time.Time
+	Name          string      `json:"name"`
+	Flashcards    []Flashcard `json:"flashcards"`
+	LastAccessed  time.Time
+	TrackProgress bool
 }
 
 func (f FlashcardSet) String() string {
