@@ -6,23 +6,30 @@ import (
 
 	"github.com/d3akhtar/tfc/app"
 	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
+type flashcardPrimitiveInfo struct {
+	Layout   *tview.Flex
+	Question *tview.TextView
+	Answer   *tview.TextView
+}
+
 func InitFlashcardSetPreview(appState *app.State) {
+	var window *utils.SlidingWindow[db.Flashcard]
+
 	maxFlashcardsShownInPreviewFlashcardList := 4
 
 	lastSelectedFlashcardPrimitive := 0
-	activeFlashcardPrimitives := make([]tview.Primitive, maxFlashcardsShownInPreviewFlashcardList)
+	activeFlashcardPrimitives := make([]flashcardPrimitiveInfo, maxFlashcardsShownInPreviewFlashcardList)
 
 	flashcardList := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
 	newFlashcardPrimitive := func(flashcard db.Flashcard, pos int) tview.Primitive {
 		layout := tview.NewFlex()
-
-		activeFlashcardPrimitives[pos] = layout
 
 		layout.
 			SetBorder(true).
@@ -79,14 +86,38 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 			switch event.Key() {
 			case tcell.KeyUp:
-				if pos > 0 {
-					appState.SetFocus(activeFlashcardPrimitives[pos-1])
+				if pos == 0 {
+					if window.CanRetreat() {
+						idx := 0
+						window.Retreat()
+						for i := window.Start; i <= window.End; i++ {
+							flashcard := window.Collection[i]
+							activeFlashcardPrimitives[idx].Layout.SetTitle(strconv.Itoa(i + 1))
+							activeFlashcardPrimitives[idx].Question.SetText(flashcard.Question)
+							activeFlashcardPrimitives[idx].Answer.SetText(flashcard.Answer)
+							idx++
+						}
+					}
+				} else {
+					appState.SetFocus(activeFlashcardPrimitives[pos-1].Layout)
 				}
 
 				return nil
 			case tcell.KeyDown:
-				if pos < maxFlashcardsShownInPreviewFlashcardList-1 {
-					appState.SetFocus(activeFlashcardPrimitives[pos+1])
+				if pos == maxFlashcardsShownInPreviewFlashcardList-1 {
+					if window.CanAdvance() {
+						idx := 0
+						window.Advance()
+						for i := window.Start; i <= window.End; i++ {
+							flashcard := window.Collection[i]
+							activeFlashcardPrimitives[idx].Layout.SetTitle(strconv.Itoa(i + 1))
+							activeFlashcardPrimitives[idx].Question.SetText(flashcard.Question)
+							activeFlashcardPrimitives[idx].Answer.SetText(flashcard.Answer)
+							idx++
+						}
+					}
+				} else {
+					appState.SetFocus(activeFlashcardPrimitives[pos+1].Layout)
 				}
 
 				return nil
@@ -131,6 +162,12 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 			return event
 		})
+
+		activeFlashcardPrimitives[pos] = flashcardPrimitiveInfo{
+			Layout:   layout,
+			Question: question,
+			Answer:   answer,
+		}
 
 		return layout
 	}
@@ -210,13 +247,13 @@ func InitFlashcardSetPreview(appState *app.State) {
 	flashcardSetPreview.AddPage("settings", settingsModal, true, false)
 
 	flashcardList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].HasFocus() {
+		if activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout.HasFocus() {
 			return event
 		}
 
 		switch event.Key() {
 		case tcell.KeyEnter:
-			appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive])
+			appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout)
 			return nil
 		case tcell.KeyTab:
 			appState.SetFocus(trackProgressButton)
@@ -227,10 +264,10 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	trackProgressButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
+		case tcell.KeyTab, tcell.KeyRight:
 			appState.SetFocus(studyButton)
 			return nil
-		case tcell.KeyBacktab:
+		case tcell.KeyBacktab, tcell.KeyLeft:
 			appState.SetFocus(flashcardList)
 			return nil
 		}
@@ -240,10 +277,10 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	studyButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
+		case tcell.KeyTab, tcell.KeyRight:
 			appState.SetFocus(editButton)
 			return nil
-		case tcell.KeyBacktab:
+		case tcell.KeyBacktab, tcell.KeyLeft:
 			appState.SetFocus(trackProgressButton)
 			return nil
 		}
@@ -253,10 +290,10 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	editButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyTab:
+		case tcell.KeyTab, tcell.KeyRight:
 			appState.SetFocus(settingsButton)
 			return nil
-		case tcell.KeyBacktab:
+		case tcell.KeyBacktab, tcell.KeyLeft:
 			appState.SetFocus(studyButton)
 			return nil
 		}
@@ -266,7 +303,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	settingsButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyBacktab:
+		case tcell.KeyBacktab, tcell.KeyLeft:
 			appState.SetFocus(editButton)
 			return nil
 		}
@@ -276,6 +313,8 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardSetPreview, flashcardSetPreview, false, func() {
 		maxFlashcardsShownInPreviewFlashcardList = min(4, len(appState.SelectedFlashcardSet.Flashcards))
+
+		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.Flashcards)
 
 		var col tcell.Color
 		var trackProgressButtonTextPrefix string
@@ -296,9 +335,9 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 		flashcardSetNameLabel.SetText(fmt.Sprintf("[ %s ]", appState.SelectedFlashcardSet.Name))
 
-		for i, flashcard := range appState.SelectedFlashcardSet.Flashcards {
+		for i := window.Start; i <= window.End; i++ {
 			flashcardList.AddItem(
-				newFlashcardPrimitive(flashcard, i),
+				newFlashcardPrimitive(appState.SelectedFlashcardSet.Flashcards[i], i),
 				0,
 				1,
 				false,

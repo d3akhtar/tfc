@@ -37,12 +37,20 @@ func NewAppState(app *tview.Application) *State {
 						Answer:   "3",
 					},
 					{
-						Question: "What is 1+3?",
-						Answer:   "4",
+						Question: "What is 1+4?",
+						Answer:   "5",
 					},
 					{
-						Question: "What is 1+3?",
-						Answer:   "4",
+						Question: "What is 1+5?",
+						Answer:   "6",
+					},
+					{
+						Question: "What is 1+6?",
+						Answer:   "7",
+					},
+					{
+						Question: "What is 1+7?",
+						Answer:   "8",
 					},
 				},
 				LastAccessed: time.Now(),
