@@ -20,7 +20,7 @@ type State struct {
 }
 
 func NewAppState(app *tview.Application) *State {
-	nav := NewNavigation()
+	nav := NewNavigation(app)
 	return &State{
 		App: app,
 
