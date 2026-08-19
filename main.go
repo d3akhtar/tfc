@@ -8,10 +8,7 @@ import (
 )
 
 func main() {
-	tview.Borders.TopLeft = '╭'
-	tview.Borders.TopRight = '╮'
-	tview.Borders.BottomLeft = '╰'
-	tview.Borders.BottomRight = '╯'
+	tui.SetDefaults()
 
 	app := tview.NewApplication()
 
