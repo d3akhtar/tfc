@@ -47,6 +47,7 @@ func Init(appState *app.State) {
 	InitFlashcardEditUi(appState)
 	InitFlashcardSetPreview(appState)
 	InitFolderUi(appState)
+	InitQuizUi(appState)
 }
 
 func NewPaddedFrameAllSides(amount int) *tview.Frame {

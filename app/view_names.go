@@ -6,10 +6,12 @@ var VIEW_NAMES = struct {
 	FlashcardEdit       string
 	FlashcardSetPreview string
 	Folder              string
+	Quiz                string
 }{
 	Home:                "Home",
 	Library:             "Library",
 	FlashcardEdit:       "FlashcardEdit",
 	FlashcardSetPreview: "FlashcardPreview",
 	Folder:              "Folder",
+	Quiz:                "Quiz",
 }

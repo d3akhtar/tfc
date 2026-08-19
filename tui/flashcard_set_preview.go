@@ -216,7 +216,10 @@ func InitFlashcardSetPreview(appState *app.State) {
 				SetLabel(trackProgressButtonTextPrefix + " Track Progress")
 		})
 
-	studyButton := tview.NewButton("Study")
+	studyButton := tview.NewButton("Study").
+		SetSelectedFunc(func() {
+			appState.Navigation.GoToView(app.VIEW_NAMES.Quiz)
+		})
 
 	editButton := tview.NewButton("Edit")
 
