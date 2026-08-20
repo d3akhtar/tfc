@@ -21,24 +21,25 @@ func InitHomeUi(appState *app.State) {
 		})
 
 	for i, flashcardSet := range appState.RecentlyStudied {
-		recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1))
+		recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1).SetTextColor(Text))
 	}
 
 	recentSetsStudies.
 		SetFocusFunc(func() {
-			recentSetsStudies.SetBorderColor(tcell.ColorGreen)
-			recentSetsStudies.SetTitleColor(tcell.ColorGreen)
+			recentSetsStudies.SetBorderColor(Focused)
+			recentSetsStudies.SetTitleColor(Focused)
 		}).
 		SetBlurFunc(func() {
-			recentSetsStudies.SetBorderColor(tcell.ColorWhite)
-			recentSetsStudies.SetTitleColor(tcell.ColorWhite)
+			recentSetsStudies.SetBorderColor(BoxBorder)
+			recentSetsStudies.SetTitleColor(BoxBorder)
 		}).
 		SetBorder(true).
 		SetTitle("Recent Sets Studies").
 		SetTitleAlign(tview.AlignLeft).
-		SetBorderColor(tcell.ColorGreen).
-		SetTitleColor(tcell.ColorGreen).
-		SetBorderPadding(1, 1, 1, 1)
+		SetBorderColor(Focused).
+		SetTitleColor(Focused).
+		SetBorderPadding(1, 1, 1, 1).
+		SetBackgroundColor(Background)
 
 	folders := tview.NewTable().
 		SetBorders(false).
@@ -53,7 +54,7 @@ func InitHomeUi(appState *app.State) {
 	for i, loadedFolder := range appState.Folders {
 		row := i / 3
 		column := i % 3
-		folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1))
+		folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
 	}
 
 	folders.
@@ -61,17 +62,23 @@ func InitHomeUi(appState *app.State) {
 		SetTitle("Folders").
 		SetTitleAlign(tview.AlignLeft).
 		SetFocusFunc(func() {
-			folders.SetBorderColor(tcell.ColorGreen)
-			folders.SetTitleColor(tcell.ColorGreen)
+			folders.SetBorderColor(Focused)
+			folders.SetTitleColor(Focused)
 		}).
 		SetBlurFunc(func() {
-			folders.SetBorderColor(tcell.ColorWhite)
-			folders.SetTitleColor(tcell.ColorWhite)
+			folders.SetBorderColor(BoxBorder)
+			folders.SetTitleColor(BoxBorder)
 		}).
-		SetBorderPadding(1, 1, 2, 0)
+		SetBorderPadding(1, 1, 2, 0).
+		SetBackgroundColor(Background).
+		SetBorderColor(BoxBorder).
+		SetTitleColor(BoxBorder)
 
-	createFlashcardButton := tview.NewButton("Flashcard")
-	createFolderButton := tview.NewButton("Folder")
+	createFlashcardSetButton := tview.NewButton("Flashcard").
+		SetStyle(PrimaryButtonStyle)
+
+	createFolderButton := tview.NewButton("Folder").
+		SetStyle(PrimaryButtonStyle)
 
 	newFolderNameInputField := tview.NewInputField().
 		SetLabel("Name: ").
@@ -84,7 +91,7 @@ func InitHomeUi(appState *app.State) {
 
 	onFolderFormSubmit := func() {
 		home.HidePage(newFolderPageName)
-		appState.App.SetFocus(createFlashcardButton)
+		appState.App.SetFocus(createFlashcardSetButton)
 
 		appState.Folders = append(appState.Folders, db.Folder{
 			Name:          formNewFolderName,
@@ -106,7 +113,7 @@ func InitHomeUi(appState *app.State) {
 		AddButton("Save", onFolderFormSubmit).
 		AddButton("Quit", func() {
 			home.HidePage(newFolderPageName)
-			appState.App.SetFocus(createFlashcardButton)
+			appState.App.SetFocus(createFlashcardSetButton)
 		}).
 		SetButtonsAlign(tview.AlignCenter).
 		SetSubmitFunc(onFolderFormSubmit)
@@ -118,7 +125,7 @@ func InitHomeUi(appState *app.State) {
 
 	newFolderFormLayout := NewModal(newFolderForm, 100, 7)
 
-	createFlashcardButton.SetSelectedFunc(func() {
+	createFlashcardSetButton.SetSelectedFunc(func() {
 		appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
 	})
 
@@ -127,37 +134,51 @@ func InitHomeUi(appState *app.State) {
 		appState.App.SetFocus(newFolderForm)
 	})
 
+	createFlashcardSetFrame := NewPaddedFrameXY(2, 1).SetPrimitive(createFlashcardSetButton)
+	createFlashcardSetFrame.SetBackgroundColor(Background)
+
+	createFolderFrame := NewPaddedFrameXY(2, 1).SetPrimitive(createFolderButton)
+	createFolderFrame.SetBackgroundColor(Background)
+
 	create := tview.NewGrid().
 		SetRows(-1, -1).
-		AddItem(NewPaddedFrameXY(2, 1).SetPrimitive(createFlashcardButton), 0, 0, 1, 1, 0, 0, true).
-		AddItem(NewPaddedFrameXY(2, 1).SetPrimitive(createFolderButton), 1, 0, 1, 1, 0, 0, false)
+		AddItem(createFlashcardSetFrame, 0, 0, 1, 1, 0, 0, true).
+		AddItem(createFolderFrame, 1, 0, 1, 1, 0, 0, false)
 
 	create.
 		SetBorder(true).
 		SetTitle("Create").
 		SetTitleAlign(tview.AlignLeft).
 		SetFocusFunc(func() {
-			create.SetBorderColor(tcell.ColorGreen)
-			create.SetTitleColor(tcell.ColorGreen)
+			create.SetBorderColor(Focused)
+			create.SetTitleColor(Focused)
 		}).
 		SetBlurFunc(func() {
-			create.SetBorderColor(tcell.ColorWhite)
-			create.SetTitleColor(tcell.ColorWhite)
-		})
+			create.SetBorderColor(BoxBorder)
+			create.SetTitleColor(BoxBorder)
+		}).
+		SetBackgroundColor(Background).
+		SetBorderColor(BoxBorder).
+		SetTitleColor(BoxBorder)
 
-	goToLibraryButton := tview.NewButton("Go To Library")
+	goToLibraryButton := tview.NewButton("Go To Library").
+		SetStyle(PrimaryButtonStyle)
+
 	goToLibrary := NewPaddedFrameAllSides(4).SetPrimitive(goToLibraryButton)
 
 	goToLibrary.
 		SetBorder(true).
 		SetFocusFunc(func() {
-			goToLibrary.SetBorderColor(tcell.ColorGreen)
-			goToLibrary.SetTitleColor(tcell.ColorGreen)
+			goToLibrary.SetBorderColor(Focused)
+			goToLibrary.SetTitleColor(Focused)
 		}).
 		SetBlurFunc(func() {
-			goToLibrary.SetBorderColor(tcell.ColorWhite)
-			goToLibrary.SetTitleColor(tcell.ColorWhite)
-		})
+			goToLibrary.SetBorderColor(BoxBorder)
+			goToLibrary.SetTitleColor(BoxBorder)
+		}).
+		SetBackgroundColor(Background).
+		SetBorderColor(BoxBorder).
+		SetTitleColor(BoxBorder)
 
 	main := tview.NewGrid().
 		SetRows(-1, -1, -1).
@@ -196,7 +217,7 @@ func InitHomeUi(appState *app.State) {
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(folders)
 		case tcell.KeyUp:
-			appState.App.SetFocus(createFlashcardButton)
+			appState.App.SetFocus(createFlashcardSetButton)
 		case tcell.KeyDown:
 			appState.App.SetFocus(createFolderButton)
 		}
