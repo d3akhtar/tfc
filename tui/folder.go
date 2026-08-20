@@ -37,6 +37,7 @@ func InitFolderUi(appState *app.State) {
 			selectedFlashcardSet := appState.SelectedFolder.FlashcardSets[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
 			appState.SelectedFlashcardSet = &selectedFlashcardSet
+			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
 	sortDropdown.
