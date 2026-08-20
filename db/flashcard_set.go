@@ -43,6 +43,10 @@ func (f *FlashcardSet) Shuffled() bool {
 }
 
 func (f *FlashcardSet) SetShuffle(val bool) {
+	if f.shuffle == val {
+		return
+	}
+
 	f.shuffle = val
 	if f.shuffle {
 		f.shuffleSeed = rand.Int()

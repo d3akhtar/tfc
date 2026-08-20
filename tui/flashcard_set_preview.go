@@ -243,6 +243,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 		SetLabel("Shuffle").
 		SetChangedFunc(func(checked bool) {
 			appState.SelectedFlashcardSet.SetShuffle(checked)
+			appState.SelectedFlashcardSet.Quiz = nil
 
 			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
