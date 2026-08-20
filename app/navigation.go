@@ -60,8 +60,8 @@ func (n *Navigation) MostRecentlyVisitedViewName() string {
 
 func (n *Navigation) showPage(pageName string) {
 	n.views.ShowPage(pageName)
-	n.refresh[pageName]()
 	n.app.SetFocus(n.lastFocusedPrimitive[pageName])
+	n.refresh[pageName]()
 }
 
 func (n *Navigation) hidePage(pageName string) {

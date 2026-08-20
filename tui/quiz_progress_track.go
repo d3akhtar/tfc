@@ -272,6 +272,8 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		})
 
 	appState.Navigation.AddView(app.VIEW_NAMES.QuizProgressTrack, quizProgressTrack, false, func() {
+		studyRemainingCardsButton.SetDisabled(false)
+
 		if quiz == nil || quiz != appState.SelectedFlashcardSet.Quiz {
 			if appState.SelectedFlashcardSet.Quiz == nil {
 				appState.SelectedFlashcardSet.StartQuiz()
