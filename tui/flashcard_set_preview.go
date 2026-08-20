@@ -270,7 +270,9 @@ func InitFlashcardSetPreview(appState *app.State) {
 		AddFormItem(shuffleCheckbox).
 		AddFormItem(frontDropdown).
 		AddButton("Reset Progress", func() {
-
+			appState.SelectedFlashcardSet.ResetQuizProgress()
+			flashcardSetPreview.HidePage("settings")
+			appState.SetFocus(settingsButton)
 		}).
 		AddButton("Close", func() {
 			flashcardSetPreview.HidePage("settings")
