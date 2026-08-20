@@ -40,12 +40,16 @@ func (q *Quiz) CanUndo() bool {
 	return q.CurrentlySelected > 0
 }
 
+func (q *Quiz) MarkCurrentlySelectedCardAsUnknown() {
+	q.nUnknown++
+	q.unknown = append(q.unknown, q.CurrentlySelected)
+}
+
 func (q *Quiz) NextCard(known bool) Flashcard {
 	if known {
 		q.nKnown++
 	} else {
-		q.nUnknown++
-		q.unknown = append(q.unknown, q.CurrentlySelected)
+		q.MarkCurrentlySelectedCardAsUnknown()
 	}
 
 	q.CurrentlySelected++

@@ -76,3 +76,7 @@ func (f *FlashcardSet) StartQuiz() {
 		f.Quiz = NewQuizFromOldQuiz(f.Quiz)
 	}
 }
+
+func (f *FlashcardSet) ResetQuizProgress() {
+	f.Quiz = NewQuiz(f.GetFlashcards())
+}

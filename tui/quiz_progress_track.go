@@ -11,11 +11,15 @@ import (
 )
 
 func InitQuizProgressTrackUi(appState *app.State) {
-	var flashcardQuiz *db.Quiz = nil
+	finishedMessageFormat := "You finished the quiz with %d/%d cards learned! What do you want to do next?"
+
+	quizProgressTrack := tview.NewPages()
+
+	var quiz *db.Quiz = nil
 	var currentFlashcard db.Flashcard
 	showAnswer := false
 
-	quiz := tview.NewGrid().
+	quizView := tview.NewGrid().
 		SetRows(44, -1)
 
 	contentView := tview.NewTextView().
@@ -86,24 +90,89 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		SetBorder(true).
 		SetBorderColor(tcell.ColorGreen)
 
+	quizFinishedMessage := tview.NewTextView().
+		SetTextAlign(tview.AlignCenter)
+
+	studyRemainingCardsButton := tview.NewButton("Study Remaining Cards").
+		SetSelectedFunc(func() {
+			appState.SelectedFlashcardSet.StartQuiz()
+			quiz = appState.SelectedFlashcardSet.Quiz
+			showAnswer = false
+
+			contentView.SetText(quiz.CurrentlySelectedCard().Question)
+			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", 1, len(quiz.Flashcards)))
+
+			knowCount.SetText("0")
+			unknownCount.SetText("0")
+
+			quizProgressTrack.SwitchToPage("main")
+
+			currentFlashcard = quiz.CurrentlySelectedCard()
+		})
+
+	resetProgressButton := tview.NewButton("Reset Progress").
+		SetSelectedFunc(func() {
+			appState.SelectedFlashcardSet.ResetQuizProgress()
+			quiz = appState.SelectedFlashcardSet.Quiz
+			showAnswer = false
+
+			contentView.SetText(quiz.CurrentlySelectedCard().Question)
+			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", 1, len(quiz.Flashcards)))
+
+			knowCount.SetText("0")
+			unknownCount.SetText("0")
+
+			quizProgressTrack.SwitchToPage("main")
+
+			currentFlashcard = quiz.CurrentlySelectedCard()
+		})
+
+	goHomeButton := tview.NewButton("Home").
+		SetSelectedFunc(func() {
+			appState.Navigation.GoToView(app.VIEW_NAMES.Home)
+		})
+
 	contentView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyLeft:
-			if flashcardQuiz.AreCardsLeft() {
+			if quiz.AreCardsLeft() {
 				showAnswer = false
-				currentFlashcard = flashcardQuiz.NextCard(false)
+
+				if quiz.IsLastCard() {
+					quiz.MarkCurrentlySelectedCardAsUnknown()
+					nKnown, _ := quiz.GetKnownAndUnknownCount()
+					quizFinishedMessage.SetText(fmt.Sprintf(finishedMessageFormat, nKnown, len(quiz.Flashcards)))
+					quizProgressTrack.SwitchToPage("finished")
+					return event
+				}
+
+				currentFlashcard = quiz.NextCard(false)
 			}
 
 		case tcell.KeyRight:
-			if flashcardQuiz.AreCardsLeft() {
+			if quiz.AreCardsLeft() {
 				showAnswer = false
-				currentFlashcard = flashcardQuiz.NextCard(true)
+
+				if quiz.IsLastCard() {
+					nKnown, _ := quiz.GetKnownAndUnknownCount()
+					quizFinishedMessage.SetText(fmt.Sprintf(finishedMessageFormat, nKnown+1, len(quiz.Flashcards)))
+					quizProgressTrack.SwitchToPage("finished")
+
+					if nKnown+1 == len(quiz.Flashcards) {
+						studyRemainingCardsButton.SetDisabled(true)
+						appState.SetFocus(resetProgressButton)
+					}
+
+					return event
+				}
+
+				currentFlashcard = quiz.NextCard(true)
 			}
 
 		case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyDEL:
-			if flashcardQuiz.CanUndo() {
+			if quiz.CanUndo() {
 				showAnswer = false
-				currentFlashcard = flashcardQuiz.Undo()
+				currentFlashcard = quiz.Undo()
 			}
 
 		case tcell.KeyRune:
@@ -120,9 +189,9 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		}
 
 		contentView.SetText(contents)
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", flashcardQuiz.CurrentlySelected+1, len(flashcardQuiz.Flashcards)))
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
 
-		known, unknown := flashcardQuiz.GetKnownAndUnknownCount()
+		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
 		unknownCount.SetText(strconv.Itoa(unknown))
 
@@ -138,24 +207,83 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		AddItem(nil, 25, 0, false).
 		AddItem(knowCount, 0, 1, false)
 
-	quiz.
+	quizView.
 		AddItem(contentViewContainer, 0, 0, 1, 1, 0, 0, true).
 		AddItem(controls, 1, 0, 1, 1, 0, 0, false)
 
-	appState.Navigation.AddView(app.VIEW_NAMES.QuizProgressTrack, quiz, false, func() {
-		if flashcardQuiz == nil || flashcardQuiz != appState.SelectedFlashcardSet.Quiz {
+	studyRemainingCardsButton.
+		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyTab, tcell.KeyDown:
+				appState.SetFocus(resetProgressButton)
+				return nil
+			}
+
+			return event
+		})
+
+	resetProgressButton.
+		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyBacktab, tcell.KeyUp:
+				appState.SetFocus(studyRemainingCardsButton)
+				return nil
+			case tcell.KeyTab, tcell.KeyDown:
+				appState.SetFocus(goHomeButton)
+				return nil
+			}
+
+			return event
+		})
+
+	goHomeButton.
+		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyBacktab, tcell.KeyUp:
+				appState.SetFocus(resetProgressButton)
+				return nil
+			}
+
+			return event
+		})
+
+	finishedQuizOptions := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(quizFinishedMessage, 5, 0, false).
+		AddItem(studyRemainingCardsButton, 0, 1, true).
+		AddItem(nil, 5, 0, false).
+		AddItem(resetProgressButton, 0, 1, false).
+		AddItem(nil, 5, 0, false).
+		AddItem(goHomeButton, 0, 1, false)
+
+	finishedQuizOptions.
+		SetBorderPadding(5, 5, 5, 5)
+
+	quizProgressTrack.
+		AddPage("main", quizView, true, true).
+		AddPage("finished", finishedQuizOptions, true, false)
+
+	quizProgressTrack.
+		SetChangedFunc(func() {
+			if pg, _ := quizProgressTrack.GetFrontPage(); pg == "main" {
+				studyRemainingCardsButton.SetDisabled(false)
+			}
+		})
+
+	appState.Navigation.AddView(app.VIEW_NAMES.QuizProgressTrack, quizProgressTrack, false, func() {
+		if quiz == nil || quiz != appState.SelectedFlashcardSet.Quiz {
 			if appState.SelectedFlashcardSet.Quiz == nil {
 				appState.SelectedFlashcardSet.StartQuiz()
 			}
 
-			flashcardQuiz = appState.SelectedFlashcardSet.Quiz
+			quiz = appState.SelectedFlashcardSet.Quiz
 			showAnswer = false
 		}
 
-		contentView.SetText(flashcardQuiz.CurrentlySelectedCard().Question)
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", flashcardQuiz.CurrentlySelected+1, len(flashcardQuiz.Flashcards)))
+		contentView.SetText(quiz.CurrentlySelectedCard().Question)
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
 
-		known, unknown := flashcardQuiz.GetKnownAndUnknownCount()
+		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
 		unknownCount.SetText(strconv.Itoa(unknown))
 	})
