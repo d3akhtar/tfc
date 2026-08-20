@@ -218,7 +218,11 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 	studyButton := tview.NewButton("Study").
 		SetSelectedFunc(func() {
-			appState.Navigation.GoToView(app.VIEW_NAMES.Quiz)
+			if appState.SelectedFlashcardSet.TrackProgress {
+				appState.Navigation.GoToView(app.VIEW_NAMES.QuizProgressTrack)
+			} else {
+				appState.Navigation.GoToView(app.VIEW_NAMES.QuizNormal)
+			}
 		})
 
 	editButton := tview.NewButton("Edit")
@@ -239,19 +243,18 @@ func InitFlashcardSetPreview(appState *app.State) {
 		SetLabel("Shuffle").
 		SetChangedFunc(func(checked bool) {
 			appState.SelectedFlashcardSet.SetShuffle(checked)
-			if checked {
-				window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
-				for i := window.Start; i <= window.End; i++ {
-					activeFlashcardPrimitives[i].Layout.
-						SetTitle(strconv.Itoa(i + 1))
+			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
-					activeFlashcardPrimitives[i].Question.SetText(window.Collection[i].Question)
-					activeFlashcardPrimitives[i].Answer.SetText(window.Collection[i].Answer)
-				}
+			for i := window.Start; i <= window.End; i++ {
+				activeFlashcardPrimitives[i].Layout.
+					SetTitle(strconv.Itoa(i + 1))
 
-				lastSelectedFlashcardPrimitive = 0
+				activeFlashcardPrimitives[i].Question.SetText(window.Collection[i].Question)
+				activeFlashcardPrimitives[i].Answer.SetText(window.Collection[i].Answer)
 			}
+
+			lastSelectedFlashcardPrimitive = 0
 		}).
 		SetCheckedString("✔")
 

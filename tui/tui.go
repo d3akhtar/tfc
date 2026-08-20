@@ -6,6 +6,7 @@ import (
 
 	"github.com/d3akhtar/tfc/app"
 	"github.com/d3akhtar/tfc/db"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -47,7 +48,8 @@ func Init(appState *app.State) {
 	InitFlashcardEditUi(appState)
 	InitFlashcardSetPreview(appState)
 	InitFolderUi(appState)
-	InitQuizUi(appState)
+	InitQuizNormalUi(appState)
+	InitQuizProgressTrackUi(appState)
 }
 
 func NewPaddedFrameAllSides(amount int) *tview.Frame {
@@ -70,6 +72,19 @@ func NewModal(p tview.Primitive, width, height int) tview.Primitive {
 			AddItem(p, height, 1, true).
 			AddItem(nil, 0, 1, false), width, 1, true).
 		AddItem(nil, 0, 1, false)
+}
+
+func NewVerticallyAlignedTextView(text string) *tview.TextView {
+	t := tview.NewTextView().
+		SetText(text).
+		SetTextAlign(tview.AlignCenter)
+
+	t.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		y += height / 2
+		return x, y, width, height
+	})
+
+	return t
 }
 
 func sortFolderCollection(option int, folders []db.Folder) {

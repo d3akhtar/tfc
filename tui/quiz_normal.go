@@ -10,14 +10,14 @@ import (
 	"github.com/rivo/tview"
 )
 
-func InitQuizUi(appState *app.State) {
+func InitQuizNormalUi(appState *app.State) {
 	var quizFlashcards []db.Flashcard
 
 	currentFlashcardIndex := 0
 	showAnswer := false
 
 	quiz := tview.NewGrid().
-		SetRows(-20, -2)
+		SetRows(44, -1)
 
 	contentView := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter)
@@ -66,12 +66,45 @@ func InitQuizUi(appState *app.State) {
 		return event
 	})
 
+	controls := tview.NewFlex()
+
+	previousButton := tview.NewButton("←").
+		SetSelectedFunc(func() {
+			if currentFlashcardIndex > 0 {
+				showAnswer = false
+				currentFlashcardIndex--
+			}
+
+			contentView.SetText(quizFlashcards[currentFlashcardIndex].Question)
+			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", currentFlashcardIndex+1, len(quizFlashcards)))
+
+			appState.SetFocus(contentView)
+		})
+
+	nextButton := tview.NewButton("→").
+		SetSelectedFunc(func() {
+			if currentFlashcardIndex < len(quizFlashcards)-1 {
+				showAnswer = false
+				currentFlashcardIndex++
+			}
+
+			contentView.SetText(quizFlashcards[currentFlashcardIndex].Question)
+			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", currentFlashcardIndex+1, len(quizFlashcards)))
+
+			appState.SetFocus(contentView)
+		})
+
+	controls.
+		AddItem(previousButton, 0, 1, false).
+		AddItem(nil, 5, 0, false).
+		AddItem(nextButton, 0, 1, false)
+
 	quiz.
 		AddItem(contentViewContainer, 0, 0, 1, 1, 0, 0, true).
-		AddItem(tview.NewBox().SetBorder(true), 1, 0, 1, 1, 0, 0, false)
+		AddItem(controls, 1, 0, 1, 1, 0, 0, false)
 
-	appState.Navigation.AddView(app.VIEW_NAMES.Quiz, quiz, false, func() {
-		if !slices.Equal(quizFlashcards, appState.SelectedFlashcardSet.Flashcards) {
+	appState.Navigation.AddView(app.VIEW_NAMES.QuizNormal, quiz, false, func() {
+		if !slices.Equal(quizFlashcards, appState.SelectedFlashcardSet.GetFlashcards()) {
 			quizFlashcards = appState.SelectedFlashcardSet.GetFlashcards()
 			currentFlashcardIndex = 0
 			showAnswer = false

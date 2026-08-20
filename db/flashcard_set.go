@@ -25,6 +25,8 @@ type FlashcardSet struct {
 
 	shuffle     bool
 	shuffleSeed int
+
+	Quiz *Quiz
 }
 
 func (f FlashcardSet) String() string {
@@ -63,5 +65,14 @@ func (f *FlashcardSet) GetFlashcards() []Flashcard {
 		return f.shuffled
 	} else {
 		return f.Flashcards
+	}
+}
+
+func (f *FlashcardSet) StartQuiz() {
+	flashcards := f.GetFlashcards()
+	if f.Quiz == nil {
+		f.Quiz = NewQuiz(flashcards)
+	} else {
+		f.Quiz = NewQuizFromOldQuiz(f.Quiz)
 	}
 }
