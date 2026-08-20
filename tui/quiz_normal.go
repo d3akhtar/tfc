@@ -37,13 +37,13 @@ func InitQuizNormalUi(appState *app.State) {
 		switch event.Key() {
 		case tcell.KeyLeft:
 			if currentFlashcardIndex > 0 {
-				showAnswer = false
+				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
 				currentFlashcardIndex--
 			}
 
 		case tcell.KeyRight:
 			if currentFlashcardIndex < len(quizFlashcards)-1 {
-				showAnswer = false
+				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
 				currentFlashcardIndex++
 			}
 
@@ -71,7 +71,7 @@ func InitQuizNormalUi(appState *app.State) {
 	previousButton := tview.NewButton("←").
 		SetSelectedFunc(func() {
 			if currentFlashcardIndex > 0 {
-				showAnswer = false
+				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
 				currentFlashcardIndex--
 			}
 
@@ -84,7 +84,7 @@ func InitQuizNormalUi(appState *app.State) {
 	nextButton := tview.NewButton("→").
 		SetSelectedFunc(func() {
 			if currentFlashcardIndex < len(quizFlashcards)-1 {
-				showAnswer = false
+				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
 				currentFlashcardIndex++
 			}
 
@@ -107,10 +107,15 @@ func InitQuizNormalUi(appState *app.State) {
 		if !slices.Equal(quizFlashcards, appState.SelectedFlashcardSet.GetFlashcards()) {
 			quizFlashcards = appState.SelectedFlashcardSet.GetFlashcards()
 			currentFlashcardIndex = 0
-			showAnswer = false
+			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
 		}
 
-		contentView.SetText(quizFlashcards[0].Question)
+		if showAnswer {
+			contentView.SetText(quizFlashcards[0].Answer)
+		} else {
+			contentView.SetText(quizFlashcards[0].Question)
+		}
+
 		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", currentFlashcardIndex+1, len(quizFlashcards)))
 	})
 }
