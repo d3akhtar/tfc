@@ -32,28 +32,22 @@ func (q *Quiz) AreCardsLeft() bool {
 	return q.CurrentlySelected < len(q.Flashcards)
 }
 
-func (q *Quiz) IsLastCard() bool {
-	return q.CurrentlySelected == len(q.Flashcards)-1
+func (q *Quiz) Finished() bool {
+	return q.CurrentlySelected >= len(q.Flashcards)
 }
 
 func (q *Quiz) CanUndo() bool {
 	return q.CurrentlySelected > 0
 }
 
-func (q *Quiz) MarkCurrentlySelectedCardAsUnknown() {
-	q.nUnknown++
-	q.unknown = append(q.unknown, q.CurrentlySelected)
-}
-
-func (q *Quiz) NextCard(known bool) Flashcard {
-	if known {
+func (q *Quiz) GoToNextCard(currentCardKnown bool) {
+	if currentCardKnown {
 		q.nKnown++
 	} else {
-		q.MarkCurrentlySelectedCardAsUnknown()
+		q.markCurrentlySelectedCardAsUnknown()
 	}
 
 	q.CurrentlySelected++
-	return q.CurrentlySelectedCard()
 }
 
 func (q *Quiz) Undo() Flashcard {
@@ -74,4 +68,9 @@ func (q *Quiz) CurrentlySelectedCard() Flashcard {
 
 func (q *Quiz) GetKnownAndUnknownCount() (int, int) {
 	return q.nKnown, q.nUnknown
+}
+
+func (q *Quiz) markCurrentlySelectedCardAsUnknown() {
+	q.nUnknown++
+	q.unknown = append(q.unknown, q.CurrentlySelected)
 }

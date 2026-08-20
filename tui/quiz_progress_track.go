@@ -136,29 +136,30 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		switch event.Key() {
 		case tcell.KeyLeft:
 			if quiz.AreCardsLeft() {
+				quiz.GoToNextCard(false)
 				showAnswer = false
 
-				if quiz.IsLastCard() {
-					quiz.MarkCurrentlySelectedCardAsUnknown()
+				if quiz.Finished() {
 					nKnown, _ := quiz.GetKnownAndUnknownCount()
 					quizFinishedMessage.SetText(fmt.Sprintf(finishedMessageFormat, nKnown, len(quiz.Flashcards)))
 					quizProgressTrack.SwitchToPage("finished")
 					return event
 				}
 
-				currentFlashcard = quiz.NextCard(false)
+				currentFlashcard = quiz.CurrentlySelectedCard()
 			}
 
 		case tcell.KeyRight:
 			if quiz.AreCardsLeft() {
+				quiz.GoToNextCard(true)
 				showAnswer = false
 
-				if quiz.IsLastCard() {
+				if quiz.Finished() {
 					nKnown, _ := quiz.GetKnownAndUnknownCount()
-					quizFinishedMessage.SetText(fmt.Sprintf(finishedMessageFormat, nKnown+1, len(quiz.Flashcards)))
+					quizFinishedMessage.SetText(fmt.Sprintf(finishedMessageFormat, nKnown, len(quiz.Flashcards)))
 					quizProgressTrack.SwitchToPage("finished")
 
-					if nKnown+1 == len(quiz.Flashcards) {
+					if nKnown == len(quiz.Flashcards) {
 						studyRemainingCardsButton.SetDisabled(true)
 						appState.SetFocus(resetProgressButton)
 					}
@@ -166,7 +167,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 					return event
 				}
 
-				currentFlashcard = quiz.NextCard(true)
+				currentFlashcard = quiz.CurrentlySelectedCard()
 			}
 
 		case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyDEL:
@@ -279,6 +280,23 @@ func InitQuizProgressTrackUi(appState *app.State) {
 			quiz = appState.SelectedFlashcardSet.Quiz
 			showAnswer = false
 		}
+
+		if quiz.Finished() {
+			nKnown, _ := quiz.GetKnownAndUnknownCount()
+			quizFinishedMessage.SetText(fmt.Sprintf(finishedMessageFormat, nKnown, len(quiz.Flashcards)))
+			quizProgressTrack.SwitchToPage("finished")
+
+			appState.SetFocus(studyRemainingCardsButton)
+
+			if nKnown == len(quiz.Flashcards) {
+				studyRemainingCardsButton.SetDisabled(true)
+				appState.SetFocus(resetProgressButton)
+			}
+
+			return
+		}
+
+		quizProgressTrack.SwitchToPage("main")
 
 		contentView.SetText(quiz.CurrentlySelectedCard().Question)
 		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
