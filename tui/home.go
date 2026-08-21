@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -91,9 +91,9 @@ func InitHomeUi(appState *app.State) {
 		home.HidePage(newFolderPageName)
 		appState.App.SetFocus(createFlashcardSetButton)
 
-		appState.Folders = append(appState.Folders, db.Folder{
+		appState.Folders = append(appState.Folders, domain.Folder{
 			Name:          formNewFolderName,
-			FlashcardSets: []db.FlashcardSet{},
+			FlashcardSets: []domain.FlashcardSet{},
 		})
 
 		newFolderNameInputField.SetText("")

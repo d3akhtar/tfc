@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 var (
-	filteredFolderFlashcardSetList []db.FlashcardSet
-	filteredFlashcardSetList       []db.FlashcardSet
-	filteredFolderList             []db.Folder
+	filteredFolderFlashcardSetList []domain.FlashcardSet
+	filteredFlashcardSetList       []domain.FlashcardSet
+	filteredFolderList             []domain.Folder
 )
 
 var (
@@ -110,27 +110,27 @@ func NewButton(title string) *tview.Button {
 		SetStyle(PrimaryButtonStyle)
 }
 
-func sortFolderCollection(option int, folders []db.Folder) {
+func sortFolderCollection(option int, folders []domain.Folder) {
 	switch option {
 	case recentOption:
-		slices.SortFunc(folders, func(a, b db.Folder) int {
+		slices.SortFunc(folders, func(a, b domain.Folder) int {
 			return -a.LastAccessed.Compare(b.LastAccessed)
 		})
 	case alphabeticalOption:
-		slices.SortFunc(folders, func(a, b db.Folder) int {
+		slices.SortFunc(folders, func(a, b domain.Folder) int {
 			return strings.Compare(a.Name, b.Name)
 		})
 	}
 }
 
-func sortFlashcardSetCollection(option int, flashcardSets []db.FlashcardSet) {
+func sortFlashcardSetCollection(option int, flashcardSets []domain.FlashcardSet) {
 	switch option {
 	case recentOption:
-		slices.SortFunc(flashcardSets, func(a, b db.FlashcardSet) int {
+		slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
 			return -a.LastAccessed.Compare(b.LastAccessed)
 		})
 	case alphabeticalOption:
-		slices.SortFunc(flashcardSets, func(a, b db.FlashcardSet) int {
+		slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
 			return strings.Compare(a.Name, b.Name)
 		})
 	}
