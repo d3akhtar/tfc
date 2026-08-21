@@ -54,17 +54,10 @@ func InitFolderUi(appState *app.State) {
 		})
 
 	flashcardSetList.
-		SetBorder(true).
-		SetFocusFunc(func() {
-			flashcardSetList.SetBorderColor(tcell.ColorGreen)
-			flashcardSetList.SetTitleColor(tcell.ColorGreen)
-		}).
-		SetBlurFunc(func() {
-			flashcardSetList.SetBorderColor(tcell.ColorWhite)
-			flashcardSetList.SetTitleColor(tcell.ColorWhite)
-		}).
-		SetBorderColor(tcell.ColorGreen).
-		SetTitleColor(tcell.ColorGreen)
+		SetBorderColor(Focused).
+		SetTitleColor(Focused)
+
+	SetBorderFocusAndBlurCallbacks(flashcardSetList.Box)
 
 	searchFolderInputField := tview.NewInputField().
 		SetLabel("").

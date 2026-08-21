@@ -68,33 +68,19 @@ func InitLibraryUi(appState *app.State) {
 			}
 		})
 
+	SetBorderFocusAndBlurCallbacks(flashcardSetList.Box)
+
 	flashcardSetList.
-		SetBorder(true).
-		SetFocusFunc(func() {
-			flashcardSetList.SetBorderColor(tcell.ColorGreen)
-			flashcardSetList.SetTitleColor(tcell.ColorGreen)
-		}).
-		SetBlurFunc(func() {
-			flashcardSetList.SetBorderColor(tcell.ColorWhite)
-			flashcardSetList.SetTitleColor(tcell.ColorWhite)
-		}).
 		SetTitle("Flashcard Sets").
 		SetTitleAlign(tview.AlignLeft)
 
+	SetBorderFocusAndBlurCallbacks(folderList.Box)
+
 	folderList.
-		SetBorder(true).
-		SetFocusFunc(func() {
-			folderList.SetBorderColor(tcell.ColorGreen)
-			folderList.SetTitleColor(tcell.ColorGreen)
-		}).
-		SetBlurFunc(func() {
-			folderList.SetBorderColor(tcell.ColorWhite)
-			folderList.SetTitleColor(tcell.ColorWhite)
-		}).
-		SetBorderColor(tcell.ColorGreen).
-		SetTitleColor(tcell.ColorGreen).
 		SetTitle("Folders").
-		SetTitleAlign(tview.AlignLeft)
+		SetTitleAlign(tview.AlignLeft).
+		SetBorderColor(Focused).
+		SetTitleColor(Focused)
 
 	searchFolderInputField := tview.NewInputField().
 		SetLabel("").

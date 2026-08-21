@@ -9,4 +9,6 @@ var (
 	Focused    = tcell.NewHexColor(0x5fb39f)
 
 	PrimaryButton = tcell.NewHexColor(0x4255ff)
+
+	FlashcardPrimitiveBorder = tcell.NewHexColor(0x908de3)
 )

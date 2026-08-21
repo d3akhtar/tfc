@@ -30,7 +30,7 @@ func InitQuizNormalUi(appState *app.State) {
 
 	contentViewContainer.
 		SetBorder(true).
-		SetBorderColor(tcell.ColorGreen).
+		SetBorderColor(Focused).
 		SetBorderPadding(4, 4, 4, 4)
 
 	contentView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -68,7 +68,7 @@ func InitQuizNormalUi(appState *app.State) {
 
 	controls := tview.NewFlex()
 
-	previousButton := tview.NewButton("←").
+	previousButton := NewButton("←").
 		SetSelectedFunc(func() {
 			if currentFlashcardIndex > 0 {
 				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
@@ -81,7 +81,7 @@ func InitQuizNormalUi(appState *app.State) {
 			appState.SetFocus(contentView)
 		})
 
-	nextButton := tview.NewButton("→").
+	nextButton := NewButton("→").
 		SetSelectedFunc(func() {
 			if currentFlashcardIndex < len(quizFlashcards)-1 {
 				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer

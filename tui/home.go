@@ -74,11 +74,9 @@ func InitHomeUi(appState *app.State) {
 		SetBorderColor(BoxBorder).
 		SetTitleColor(BoxBorder)
 
-	createFlashcardSetButton := tview.NewButton("Flashcard").
-		SetStyle(PrimaryButtonStyle)
+	createFlashcardSetButton := NewButton("Flashcard")
 
-	createFolderButton := tview.NewButton("Folder").
-		SetStyle(PrimaryButtonStyle)
+	createFolderButton := NewButton("Folder")
 
 	newFolderNameInputField := tview.NewInputField().
 		SetLabel("Name: ").
@@ -126,6 +124,7 @@ func InitHomeUi(appState *app.State) {
 	newFolderFormLayout := NewModal(newFolderForm, 100, 7)
 
 	createFlashcardSetButton.SetSelectedFunc(func() {
+		appState.SelectedFlashcardSet = nil
 		appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
 	})
 
@@ -161,8 +160,7 @@ func InitHomeUi(appState *app.State) {
 		SetBorderColor(BoxBorder).
 		SetTitleColor(BoxBorder)
 
-	goToLibraryButton := tview.NewButton("Go To Library").
-		SetStyle(PrimaryButtonStyle)
+	goToLibraryButton := NewButton("Go To Library")
 
 	goToLibrary := NewPaddedFrameAllSides(4).SetPrimitive(goToLibraryButton)
 

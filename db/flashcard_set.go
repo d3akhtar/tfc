@@ -16,6 +16,7 @@ const (
 
 type FlashcardSet struct {
 	Name          string `json:"name"`
+	Description   string `json:"description"`
 	LastAccessed  time.Time
 	TrackProgress bool
 	Front         FlashcardFront
@@ -27,6 +28,18 @@ type FlashcardSet struct {
 	shuffleSeed int
 
 	Quiz *Quiz
+}
+
+func NewFlashcardSet(name string) *FlashcardSet {
+	return &FlashcardSet{
+		Name: name,
+		Flashcards: []Flashcard{
+			{
+				Question: "Question 1",
+				Answer:   "Answer 1",
+			},
+		},
+	}
 }
 
 func (f FlashcardSet) String() string {

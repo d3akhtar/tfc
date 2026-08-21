@@ -33,7 +33,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 
 	contentViewContainer.
 		SetBorder(true).
-		SetBorderColor(tcell.ColorGreen).
+		SetBorderColor(Focused).
 		SetBorderPadding(4, 4, 4, 4)
 
 	controls := tview.NewFlex()
@@ -46,7 +46,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		SetBorder(true).
 		SetBorderColor(tcell.ColorRed)
 
-	unknownButton := tview.NewButton("✖").
+	unknownButton := NewButton("✖").
 		SetStyle(tcell.StyleDefault.
 			Background(tcell.ColorRed).
 			Foreground(tcell.ColorBlack))
@@ -58,7 +58,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		SetBorder(true).
 		SetBorderColor(tcell.ColorRed)
 
-	undoButton := tview.NewButton("↺").
+	undoButton := NewButton("↺").
 		SetStyle(tcell.StyleDefault.
 			Background(tcell.NewHexColor(0x00fff2)).
 			Foreground(tcell.ColorBlack))
@@ -70,9 +70,9 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		SetBorder(true).
 		SetBorderColor(tcell.NewHexColor(0x00fff2))
 
-	knowButton := tview.NewButton("✔").
+	knowButton := NewButton("✔").
 		SetStyle(tcell.StyleDefault.
-			Background(tcell.ColorGreen).
+			Background(Focused).
 			Foreground(tcell.ColorBlack))
 
 	knowButtonFrame := tview.NewFrame(knowButton).
@@ -80,20 +80,20 @@ func InitQuizProgressTrackUi(appState *app.State) {
 
 	knowButtonFrame.
 		SetBorder(true).
-		SetBorderColor(tcell.ColorGreen)
+		SetBorderColor(Focused)
 
 	knowCount := NewVerticallyAlignedTextView("0").
 		SetScrollable(false).
-		SetTextColor(tcell.ColorGreen)
+		SetTextColor(Focused)
 
 	knowCount.
 		SetBorder(true).
-		SetBorderColor(tcell.ColorGreen)
+		SetBorderColor(Focused)
 
 	quizFinishedMessage := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter)
 
-	studyRemainingCardsButton := tview.NewButton("Study Remaining Cards").
+	studyRemainingCardsButton := NewButton("Study Remaining Cards").
 		SetSelectedFunc(func() {
 			appState.SelectedFlashcardSet.StartQuiz()
 			quiz = appState.SelectedFlashcardSet.Quiz
@@ -110,7 +110,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 			currentFlashcard = quiz.CurrentlySelectedCard()
 		})
 
-	resetProgressButton := tview.NewButton("Reset Progress").
+	resetProgressButton := NewButton("Reset Progress").
 		SetSelectedFunc(func() {
 			appState.SelectedFlashcardSet.ResetQuizProgress()
 			quiz = appState.SelectedFlashcardSet.Quiz
@@ -127,7 +127,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 			currentFlashcard = quiz.CurrentlySelectedCard()
 		})
 
-	goHomeButton := tview.NewButton("Home").
+	goHomeButton := NewButton("Home").
 		SetSelectedFunc(func() {
 			appState.Navigation.GoToView(app.VIEW_NAMES.Home)
 		})

@@ -40,6 +40,11 @@ func SetDefaults() {
 
 	tview.Borders.HorizontalFocus = tview.Borders.Horizontal
 	tview.Borders.VerticalFocus = tview.Borders.Vertical
+
+	tview.Styles.PrimitiveBackgroundColor = Background
+	tview.Styles.BorderColor = BoxBorder
+	tview.Styles.TitleColor = BoxBorder
+	tview.Styles.PrimaryTextColor = Text
 }
 
 func Init(appState *app.State) {
@@ -85,6 +90,23 @@ func NewVerticallyAlignedTextView(text string) *tview.TextView {
 	})
 
 	return t
+}
+
+func SetBorderFocusAndBlurCallbacks(p *tview.Box) {
+	p.
+		SetBorder(true).
+		SetFocusFunc(func() {
+			p.SetBorderColor(Focused)
+			p.SetTitleColor(Focused)
+		}).
+		SetBlurFunc(func() {
+			p.SetBorderColor(BoxBorder).SetTitleColor(BoxBorder)
+		}).SetBorderColor(BoxBorder).SetTitleColor(BoxBorder)
+}
+
+func NewButton(title string) *tview.Button {
+	return tview.NewButton(title).
+		SetStyle(PrimaryButtonStyle)
 }
 
 func sortFolderCollection(option int, folders []db.Folder) {

@@ -20,7 +20,7 @@ type flashcardPrimitiveInfo struct {
 func InitFlashcardSetPreview(appState *app.State) {
 	var window *utils.SlidingWindow[db.Flashcard]
 
-	maxFlashcardsShownInPreviewFlashcardList := 4
+	maxFlashcardsShownInPreviewFlashcardList := 3
 
 	lastSelectedFlashcardPrimitive := 0
 	activeFlashcardPrimitives := make([]flashcardPrimitiveInfo, maxFlashcardsShownInPreviewFlashcardList)
@@ -36,15 +36,15 @@ func InitFlashcardSetPreview(appState *app.State) {
 			SetBorderPadding(1, 1, 1, 1).
 			SetFocusFunc(func() {
 				lastSelectedFlashcardPrimitive = pos
-				layout.SetBorderColor(tcell.ColorGreen)
-				layout.SetTitleColor(tcell.ColorGreen)
+				layout.SetBorderColor(Focused).SetTitleColor(Focused)
 			}).
 			SetBlurFunc(func() {
-				layout.SetBorderColor(tcell.ColorWhite)
-				layout.SetTitleColor(tcell.ColorWhite)
+				layout.SetBorderColor(FlashcardPrimitiveBorder).SetTitleColor(FlashcardPrimitiveBorder)
 			}).
 			SetTitle(strconv.Itoa((pos + 1))).
-			SetTitleAlign(tview.AlignLeft)
+			SetTitleAlign(tview.AlignLeft).
+			SetBorderColor(FlashcardPrimitiveBorder).
+			SetTitleColor(FlashcardPrimitiveBorder)
 
 		question := tview.NewTextView().
 			SetText(flashcard.Question)
@@ -52,29 +52,15 @@ func InitFlashcardSetPreview(appState *app.State) {
 		answer := tview.NewTextView().
 			SetText(flashcard.Answer)
 
+		SetBorderFocusAndBlurCallbacks(question.Box)
+
 		question.
-			SetBorder(true).
-			SetBorderPadding(1, 1, 1, 1).
-			SetFocusFunc(func() {
-				question.SetBorderColor(tcell.ColorGreen)
-				question.SetTitleColor(tcell.ColorGreen)
-			}).
-			SetBlurFunc(func() {
-				question.SetBorderColor(tcell.ColorWhite)
-				question.SetTitleColor(tcell.ColorWhite)
-			})
+			SetBorderPadding(1, 1, 1, 1)
+
+		SetBorderFocusAndBlurCallbacks(answer.Box)
 
 		answer.
-			SetBorder(true).
-			SetBorderPadding(1, 1, 1, 1).
-			SetFocusFunc(func() {
-				answer.SetBorderColor(tcell.ColorGreen)
-				answer.SetTitleColor(tcell.ColorGreen)
-			}).
-			SetBlurFunc(func() {
-				answer.SetBorderColor(tcell.ColorWhite)
-				answer.SetTitleColor(tcell.ColorWhite)
-			})
+			SetBorderPadding(1, 1, 1, 1)
 
 		layout.AddItem(question, 0, 1, false)
 		layout.AddItem(answer, 0, 1, false)
@@ -124,11 +110,8 @@ func InitFlashcardSetPreview(appState *app.State) {
 			case tcell.KeyEnter:
 				appState.SetFocus(question)
 				return nil
-			case tcell.KeyRune:
-				if event.Rune() == 'q' {
-					appState.SetFocus(flashcardList)
-				}
-
+			case tcell.KeyEsc:
+				appState.SetFocus(flashcardList)
 				return nil
 			}
 
@@ -140,10 +123,9 @@ func InitFlashcardSetPreview(appState *app.State) {
 			case tcell.KeyLeft, tcell.KeyRight:
 				appState.SetFocus(answer)
 				return nil
-			case tcell.KeyRune:
-				if event.Rune() == 'q' {
-					appState.SetFocus(layout)
-				}
+			case tcell.KeyEsc:
+				appState.SetFocus(layout)
+				return nil
 			}
 
 			return event
@@ -154,10 +136,9 @@ func InitFlashcardSetPreview(appState *app.State) {
 			case tcell.KeyLeft, tcell.KeyRight:
 				appState.SetFocus(question)
 				return nil
-			case tcell.KeyRune:
-				if event.Rune() == 'q' {
-					appState.SetFocus(layout)
-				}
+			case tcell.KeyEsc:
+				appState.SetFocus(layout)
+				return nil
 			}
 
 			return event
@@ -181,21 +162,14 @@ func InitFlashcardSetPreview(appState *app.State) {
 		SetScrollable(false).
 		SetSize(2, 30)
 
+	SetBorderFocusAndBlurCallbacks(flashcardList.Box)
+
 	flashcardList.
 		SetTitle("Flashcards").
-		SetBorder(true).
-		SetFocusFunc(func() {
-			flashcardList.SetBorderColor(tcell.ColorGreen)
-			flashcardList.SetTitleColor(tcell.ColorGreen)
-		}).
-		SetBlurFunc(func() {
-			flashcardList.SetBorderColor(tcell.ColorWhite)
-			flashcardList.SetTitleColor(tcell.ColorWhite)
-		}).
-		SetBorderColor(tcell.ColorGreen).
-		SetTitleColor(tcell.ColorGreen)
+		SetBorderColor(Focused).
+		SetTitleColor(Focused)
 
-	trackProgressButton := tview.NewButton("Track Progress")
+	trackProgressButton := NewButton("Track Progress")
 
 	trackProgressButton.
 		SetSelectedFunc(func() {
@@ -216,7 +190,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 				SetLabel(trackProgressButtonTextPrefix + " Track Progress")
 		})
 
-	studyButton := tview.NewButton("Study").
+	studyButton := NewButton("Study").
 		SetSelectedFunc(func() {
 			if appState.SelectedFlashcardSet.TrackProgress {
 				appState.Navigation.GoToView(app.VIEW_NAMES.QuizProgressTrack)
@@ -225,9 +199,12 @@ func InitFlashcardSetPreview(appState *app.State) {
 			}
 		})
 
-	editButton := tview.NewButton("Edit")
+	editButton := NewButton("Edit").
+		SetSelectedFunc(func() {
+			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
+		})
 
-	settingsButton := tview.NewButton("Settings")
+	settingsButton := NewButton("Settings")
 
 	buttonGroup := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
@@ -363,7 +340,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 	})
 
 	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardSetPreview, flashcardSetPreview, false, func() {
-		maxFlashcardsShownInPreviewFlashcardList = min(4, len(appState.SelectedFlashcardSet.Flashcards))
+		maxFlashcardsShownInPreviewFlashcardList = min(3, len(appState.SelectedFlashcardSet.Flashcards))
 
 		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
