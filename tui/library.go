@@ -13,7 +13,7 @@ import (
 
 func InitLibraryUi(appState *app.State) {
 	library := tview.NewGrid().
-		SetRows(-1, -10, -10).
+		SetRows(3, -10, -10).
 		SetColumns(-5, 3, -1)
 
 	sortDropdown := tview.NewDropDown().
@@ -83,8 +83,6 @@ func InitLibraryUi(appState *app.State) {
 		SetTitleColor(Focused)
 
 	searchFolderInputField := tview.NewInputField().
-		SetLabel("").
-		SetPlaceholder("Search library...").
 		SetChangedFunc(func(text string) {
 			flashcardSetList.Clear()
 			folderList.Clear()
@@ -119,8 +117,13 @@ func InitLibraryUi(appState *app.State) {
 					tview.NewTableCell(folder.String()).SetExpansion(1),
 				)
 			}
-		}).
-		SetFieldWidth(0)
+		})
+
+	SetBorderFocusAndBlurCallbacks(searchFolderInputField.Box)
+	searchFolderInputField.
+		SetFieldBackgroundColor(Background).
+		SetTitle("Search").
+		SetTitleAlign(tview.AlignLeft)
 
 	folderList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -184,7 +187,13 @@ func InitLibraryUi(appState *app.State) {
 	library.
 		AddItem(searchFolderInputField, 0, 0, 1, 1, 0, 0, false).
 		AddItem(tview.NewBox(), 0, 1, 1, 1, 0, 0, false).
-		AddItem(sortDropdown, 0, 2, 1, 1, 0, 0, false).
+		AddItem(
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(sortDropdown, 0, 1, true).
+				AddItem(nil, 0, 1, false),
+			0, 2, 1, 1, 0, 0, false).
 		AddItem(folderList, 1, 0, 1, 3, 0, 0, true).
 		AddItem(flashcardSetList, 2, 0, 1, 3, 0, 0, false)
 

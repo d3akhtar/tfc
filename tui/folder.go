@@ -14,13 +14,14 @@ import (
 
 func InitFolderUi(appState *app.State) {
 	folder := tview.NewGrid().
-		SetRows(-1, -23).
-		SetColumns(-1, -4, 3, -1)
+		SetRows(3, -20, -2).
+		SetColumns(-1, -3, 3, -1)
 
 	folderNameLabel := tview.
 		NewTextView().
 		SetScrollable(false).
-		SetSize(2, 30)
+		SetSize(2, 30).
+		SetTextAlign(tview.AlignCenter)
 
 	sortDropdown := tview.NewDropDown().
 		SetLabel("Sort: ").
@@ -39,6 +40,8 @@ func InitFolderUi(appState *app.State) {
 			appState.SelectedFlashcardSet = &selectedFlashcardSet
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
+
+	addFlashcardSetButton := NewButton("Add Flashcard Set")
 
 	sortDropdown.
 		SetSelectedFunc(func(_ string, option int) {
@@ -60,8 +63,6 @@ func InitFolderUi(appState *app.State) {
 	SetBorderFocusAndBlurCallbacks(flashcardSetList.Box)
 
 	searchFolderInputField := tview.NewInputField().
-		SetLabel("").
-		SetPlaceholder("Search folder...").
 		SetChangedFunc(func(text string) {
 			flashcardSetList.Clear()
 			filteredFlashcardSetList = []db.FlashcardSet{}
@@ -79,19 +80,43 @@ func InitFolderUi(appState *app.State) {
 					tview.NewTableCell(collection.String()).SetExpansion(1),
 				)
 			}
-		}).
-		SetFieldWidth(0)
+		})
+
+	SetBorderFocusAndBlurCallbacks(searchFolderInputField.Box)
+
+	searchFolderInputField.
+		SetFieldBackgroundColor(Background).
+		SetTitle("Search folder").
+		SetTitleAlign(tview.AlignLeft)
 
 	flashcardSetList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(sortDropdown)
 			return nil
+		case tcell.KeyTab:
+			appState.App.SetFocus(addFlashcardSetButton)
+			return nil
+		case tcell.KeyRune:
+			if event.Rune() == '/' {
+				appState.App.SetFocus(searchFolderInputField)
+				return nil
+			}
 		}
 
-		if event.Key() == tcell.KeyRune && event.Rune() == '/' {
-			appState.App.SetFocus(searchFolderInputField)
+		return event
+	})
+
+	addFlashcardSetButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyBacktab:
+			appState.App.SetFocus(flashcardSetList)
 			return nil
+		case tcell.KeyRune:
+			if event.Rune() == '/' {
+				appState.App.SetFocus(searchFolderInputField)
+				return nil
+			}
 		}
 
 		return event
@@ -124,11 +149,24 @@ func InitFolderUi(appState *app.State) {
 	})
 
 	folder.
-		AddItem(folderNameLabel, 0, 0, 1, 1, 0, 0, false).
+		AddItem(
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(folderNameLabel, 0, 1, true).
+				AddItem(nil, 0, 1, false),
+			0, 0, 1, 1, 0, 0, false).
 		AddItem(searchFolderInputField, 0, 1, 1, 1, 0, 0, false).
 		AddItem(tview.NewBox(), 0, 2, 1, 1, 0, 0, false).
-		AddItem(sortDropdown, 0, 3, 1, 1, 0, 0, false).
-		AddItem(flashcardSetList, 1, 0, 1, 4, 0, 0, true)
+		AddItem(
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(sortDropdown, 0, 1, true).
+				AddItem(nil, 0, 1, false),
+			0, 3, 1, 1, 0, 0, false).
+		AddItem(flashcardSetList, 1, 0, 1, 4, 0, 0, true).
+		AddItem(addFlashcardSetButton, 2, 0, 1, 4, 0, 0, false)
 
 	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folder, false, func() {
 		searchFolderInputField.SetText("")
