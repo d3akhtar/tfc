@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	filteredFlashcardSetList []db.FlashcardSet
-	filteredFolderList       []db.Folder
+	filteredFolderFlashcardSetList []db.FlashcardSet
+	filteredFlashcardSetList       []db.FlashcardSet
+	filteredFolderList             []db.Folder
 )
 
 var (
