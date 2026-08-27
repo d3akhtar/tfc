@@ -5,13 +5,13 @@ import (
 	"slices"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 func InitQuizNormalUi(appState *app.State) {
-	var quizFlashcards []db.Flashcard
+	var quizFlashcards []domain.Flashcard
 
 	currentFlashcardIndex := 0
 	showAnswer := false
@@ -37,13 +37,13 @@ func InitQuizNormalUi(appState *app.State) {
 		switch event.Key() {
 		case tcell.KeyLeft:
 			if currentFlashcardIndex > 0 {
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 				currentFlashcardIndex--
 			}
 
 		case tcell.KeyRight:
 			if currentFlashcardIndex < len(quizFlashcards)-1 {
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 				currentFlashcardIndex++
 			}
 
@@ -71,7 +71,7 @@ func InitQuizNormalUi(appState *app.State) {
 	previousButton := NewButton("←").
 		SetSelectedFunc(func() {
 			if currentFlashcardIndex > 0 {
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 				currentFlashcardIndex--
 			}
 
@@ -84,7 +84,7 @@ func InitQuizNormalUi(appState *app.State) {
 	nextButton := NewButton("→").
 		SetSelectedFunc(func() {
 			if currentFlashcardIndex < len(quizFlashcards)-1 {
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 				currentFlashcardIndex++
 			}
 
@@ -107,7 +107,7 @@ func InitQuizNormalUi(appState *app.State) {
 		if !slices.Equal(quizFlashcards, appState.SelectedFlashcardSet.GetFlashcards()) {
 			quizFlashcards = appState.SelectedFlashcardSet.GetFlashcards()
 			currentFlashcardIndex = 0
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 		}
 
 		if showAnswer {

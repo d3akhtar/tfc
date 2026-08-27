@@ -1,4 +1,4 @@
-package db
+package domain
 
 import (
 	"fmt"
@@ -15,17 +15,17 @@ const (
 )
 
 type FlashcardSet struct {
-	Name          string `json:"name"`
-	Description   string `json:"description"`
+	Id            int
+	Name          string
+	Description   string
 	LastAccessed  time.Time
 	TrackProgress bool
 	Front         FlashcardFront
+	Shuffle       bool
+	ShuffleSeed   int
 
-	Flashcards []Flashcard `json:"flashcards"`
+	Flashcards []Flashcard
 	shuffled   []Flashcard
-
-	shuffle     bool
-	shuffleSeed int
 
 	Quiz *Quiz
 }
@@ -47,31 +47,31 @@ func (f FlashcardSet) String() string {
 		"○ %s | %d flashcards | Last Accessed: %s",
 		f.Name,
 		len(f.Flashcards),
-		f.LastAccessed.Format(time.RFC822),
+		f.LastAccessed.Local().Format(time.RFC822),
 	)
 }
 
 func (f *FlashcardSet) Shuffled() bool {
-	return f.shuffle
+	return f.Shuffle
 }
 
 func (f *FlashcardSet) SetShuffle(val bool) {
-	if f.shuffle == val {
+	if f.Shuffle == val {
 		return
 	}
 
-	f.shuffle = val
-	if f.shuffle {
-		f.shuffleSeed = rand.Int()
+	f.Shuffle = val
+	if f.Shuffle {
+		f.ShuffleSeed = rand.Int()
 	} else {
 		f.shuffled = nil
 	}
 }
 
 func (f *FlashcardSet) GetFlashcards() []Flashcard {
-	if f.shuffle {
+	if f.Shuffle {
 		if f.shuffled == nil {
-			pcg := rand.NewPCG(uint64(f.shuffleSeed), 0)
+			pcg := rand.NewPCG(uint64(f.ShuffleSeed), 0)
 			r := rand.New(pcg)
 			f.shuffled = slices.Clone(f.Flashcards)
 			r.Shuffle(len(f.shuffled), func(i, j int) {
@@ -88,12 +88,23 @@ func (f *FlashcardSet) GetFlashcards() []Flashcard {
 func (f *FlashcardSet) StartQuiz() {
 	flashcards := f.GetFlashcards()
 	if f.Quiz == nil {
-		f.Quiz = NewQuiz(flashcards)
+		f.Quiz = NewQuiz(f.Id, flashcards)
 	} else {
 		f.Quiz = NewQuizFromOldQuiz(f.Quiz)
 	}
 }
 
+func (f *FlashcardSet) AddFlashcard(question, answer string) {
+	flashcard := Flashcard{
+		Question:       question,
+		Answer:         answer,
+		FlashcardSetId: f.Id,
+		Position:       len(f.Flashcards),
+	}
+
+	f.Flashcards = append(f.Flashcards, flashcard)
+}
+
 func (f *FlashcardSet) ResetQuizProgress() {
-	f.Quiz = NewQuiz(f.GetFlashcards())
+	f.Quiz = NewQuiz(f.Id, f.GetFlashcards())
 }

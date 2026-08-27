@@ -1,4 +1,4 @@
-package db
+package domain
 
 import (
 	"fmt"
@@ -6,9 +6,12 @@ import (
 )
 
 type Folder struct {
-	Name          string         `json:"name"`
-	FlashcardSets []FlashcardSet `json:"collections"`
+	Id            int
+	Name          string
+	FlashcardSets []FlashcardSet
 	LastAccessed  time.Time
+
+	FlashcardSetCount int
 }
 
 func (f Folder) String() string {

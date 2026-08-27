@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/d3akhtar/tfc/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -17,9 +17,9 @@ type flashcardEditPrimitiveInfo struct {
 }
 
 func InitFlashcardEditUi(appState *app.State) {
-	var selectedFlashcardSet *db.FlashcardSet = nil
+	var selectedFlashcardSet *domain.FlashcardSet = nil
 
-	var window *utils.SlidingWindow[db.Flashcard]
+	var window *utils.SlidingWindow[domain.Flashcard]
 
 	maxFlashcardsShownInPreviewFlashcardList := 3
 
@@ -35,7 +35,7 @@ func InitFlashcardEditUi(appState *app.State) {
 
 	SetBorderFocusAndBlurCallbacks(flashcardList.Box)
 
-	newFlashcardPrimitive := func(flashcard db.Flashcard, pos int) tview.Primitive {
+	newFlashcardPrimitive := func(flashcard domain.Flashcard, pos int) tview.Primitive {
 		layout := tview.NewFlex()
 
 		layout.
@@ -257,7 +257,7 @@ func InitFlashcardEditUi(appState *app.State) {
 		AddButton("Save", func() {
 			question := questionInputTextArea.GetText()
 			answer := answerInputTextArea.GetText()
-			selectedFlashcardSet.Flashcards = append(selectedFlashcardSet.Flashcards, db.Flashcard{
+			selectedFlashcardSet.Flashcards = append(selectedFlashcardSet.Flashcards, domain.Flashcard{
 				Question: question,
 				Answer:   answer,
 			})
@@ -375,7 +375,7 @@ func InitFlashcardEditUi(appState *app.State) {
 		}
 
 		if selectedFlashcardSet == nil {
-			selectedFlashcardSet = db.NewFlashcardSet("Unnamed")
+			selectedFlashcardSet = domain.NewFlashcardSet("Unnamed")
 			finishButton.SetLabel("Create")
 		} else {
 			finishButton.SetLabel("Finish")

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -72,7 +72,7 @@ func InitFolderUi(appState *app.State) {
 	searchFolderInputField := tview.NewInputField().
 		SetChangedFunc(func(text string) {
 			folderFlashcardSetList.Clear()
-			filteredFolderFlashcardSetList = []db.FlashcardSet{}
+			filteredFolderFlashcardSetList = []domain.FlashcardSet{}
 
 			for _, flashcardSet := range appState.SelectedFolder.FlashcardSets {
 				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
@@ -105,7 +105,7 @@ func InitFolderUi(appState *app.State) {
 			pos := row
 			selectedFlashcardSet := appState.FlashcardSets[pos]
 
-			check := func(set db.FlashcardSet) bool {
+			check := func(set domain.FlashcardSet) bool {
 				return set.Name == selectedFlashcardSet.Name &&
 					set.Description == selectedFlashcardSet.Description &&
 					slices.Equal(set.Flashcards, selectedFlashcardSet.Flashcards)
@@ -131,7 +131,7 @@ func InitFolderUi(appState *app.State) {
 	flashcardSetListSearchInputField := tview.NewInputField().
 		SetChangedFunc(func(text string) {
 			flashcardSetList.Clear()
-			filteredFlashcardSetList = []db.FlashcardSet{}
+			filteredFlashcardSetList = []domain.FlashcardSet{}
 
 			for _, flashcardSet := range appState.FlashcardSets {
 				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
@@ -322,7 +322,7 @@ func InitFolderUi(appState *app.State) {
 
 		for i, flashcardSet := range filteredFlashcardSetList {
 			var col tcell.Color
-			if slices.ContainsFunc(appState.SelectedFolder.FlashcardSets, func(set db.FlashcardSet) bool {
+			if slices.ContainsFunc(appState.SelectedFolder.FlashcardSets, func(set domain.FlashcardSet) bool {
 				return set.Name == flashcardSet.Name &&
 					set.Description == flashcardSet.Description &&
 					slices.Equal(set.Flashcards, flashcardSet.Flashcards)

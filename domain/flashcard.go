@@ -1,10 +1,14 @@
-package db
+package domain
 
 import "fmt"
 
 type Flashcard struct {
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
+	Id       int
+	Question string
+	Answer   string
+
+	FlashcardSetId int
+	Position       int
 }
 
 func (f Flashcard) String() string {

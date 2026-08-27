@@ -3,18 +3,18 @@ package app
 import (
 	"time"
 
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/rivo/tview"
 )
 
 type State struct {
 	App *tview.Application
 
-	RecentlyStudied      []db.FlashcardSet
-	FlashcardSets        []db.FlashcardSet
-	Folders              []db.Folder
-	SelectedFlashcardSet *db.FlashcardSet
-	SelectedFolder       *db.Folder
+	RecentlyStudied      []domain.FlashcardSet
+	FlashcardSets        []domain.FlashcardSet
+	Folders              []domain.Folder
+	SelectedFlashcardSet *domain.FlashcardSet
+	SelectedFolder       *domain.Folder
 
 	Navigation *Navigation
 }
@@ -24,10 +24,10 @@ func NewAppState(app *tview.Application) *State {
 	return &State{
 		App: app,
 
-		RecentlyStudied: []db.FlashcardSet{
+		RecentlyStudied: []domain.FlashcardSet{
 			{
 				Name: "Stew C",
-				Flashcards: []db.Flashcard{
+				Flashcards: []domain.Flashcard{
 					{
 						Question: "What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? What is 1+1? ",
 						Answer:   "2",
@@ -57,42 +57,42 @@ func NewAppState(app *tview.Application) *State {
 			},
 			{
 				Name: "Stew B",
-				Flashcards: []db.Flashcard{
+				Flashcards: []domain.Flashcard{
 					{},
 				},
 				LastAccessed: time.Now().Add(-15 * time.Minute),
 			},
 			{
 				Name: "Stew A",
-				Flashcards: []db.Flashcard{
+				Flashcards: []domain.Flashcard{
 					{}, {},
 				},
 				LastAccessed: time.Now().Add(-30 * time.Minute),
 			},
 		},
-		Folders: []db.Folder{
+		Folders: []domain.Folder{
 			{
 				Name:          "The Stew",
-				FlashcardSets: []db.FlashcardSet{},
+				FlashcardSets: []domain.FlashcardSet{},
 			},
 			{
 				Name: "The Selected Stew",
-				FlashcardSets: []db.FlashcardSet{
+				FlashcardSets: []domain.FlashcardSet{
 					{
 						Name:         "Stew C",
-						Flashcards:   []db.Flashcard{},
+						Flashcards:   []domain.Flashcard{},
 						LastAccessed: time.Now(),
 					},
 					{
 						Name: "Stew B",
-						Flashcards: []db.Flashcard{
+						Flashcards: []domain.Flashcard{
 							{},
 						},
 						LastAccessed: time.Now().Add(-15 * time.Minute),
 					},
 					{
 						Name: "Stew A",
-						Flashcards: []db.Flashcard{
+						Flashcards: []domain.Flashcard{
 							{}, {},
 						},
 						LastAccessed: time.Now().Add(-30 * time.Minute),
@@ -100,22 +100,22 @@ func NewAppState(app *tview.Application) *State {
 				},
 			},
 		},
-		FlashcardSets: []db.FlashcardSet{
+		FlashcardSets: []domain.FlashcardSet{
 			{
 				Name:         "Stew C",
-				Flashcards:   []db.Flashcard{},
+				Flashcards:   []domain.Flashcard{},
 				LastAccessed: time.Now(),
 			},
 			{
 				Name: "Stew B",
-				Flashcards: []db.Flashcard{
+				Flashcards: []domain.Flashcard{
 					{},
 				},
 				LastAccessed: time.Now().Add(-15 * time.Minute),
 			},
 			{
 				Name: "Stew A",
-				Flashcards: []db.Flashcard{
+				Flashcards: []domain.Flashcard{
 					{}, {},
 				},
 				LastAccessed: time.Now().Add(-30 * time.Minute),

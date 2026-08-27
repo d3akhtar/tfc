@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -87,8 +87,8 @@ func InitLibraryUi(appState *app.State) {
 			flashcardSetList.Clear()
 			folderList.Clear()
 
-			filteredFlashcardSetList = []db.FlashcardSet{}
-			filteredFolderList = []db.Folder{}
+			filteredFlashcardSetList = []domain.FlashcardSet{}
+			filteredFolderList = []domain.Folder{}
 
 			for _, flashcardSet := range appState.FlashcardSets {
 				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {

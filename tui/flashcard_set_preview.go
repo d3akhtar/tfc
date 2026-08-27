@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/d3akhtar/tfc/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -18,7 +18,7 @@ type flashcardPrimitiveInfo struct {
 }
 
 func InitFlashcardSetPreview(appState *app.State) {
-	var window *utils.SlidingWindow[db.Flashcard]
+	var window *utils.SlidingWindow[domain.Flashcard]
 
 	maxFlashcardsShownInPreviewFlashcardList := 3
 
@@ -28,7 +28,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 	flashcardList := tview.NewFlex().
 		SetDirection(tview.FlexRow)
 
-	newFlashcardPrimitive := func(flashcard db.Flashcard, pos int) tview.Primitive {
+	newFlashcardPrimitive := func(flashcard domain.Flashcard, pos int) tview.Primitive {
 		layout := tview.NewFlex()
 
 		layout.
@@ -239,7 +239,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 	frontDropdown := tview.NewDropDown().
 		SetLabel("Front").
 		SetOptions([]string{"Question", "Answer"}, func(_ string, option int) {
-			appState.SelectedFlashcardSet.Front = db.FlashcardFront(option)
+			appState.SelectedFlashcardSet.Front = domain.FlashcardFront(option)
 		})
 
 	settings := tview.NewForm().

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
-	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -15,8 +15,8 @@ func InitQuizProgressTrackUi(appState *app.State) {
 
 	quizProgressTrack := tview.NewPages()
 
-	var quiz *db.Quiz = nil
-	var currentFlashcard db.Flashcard
+	var quiz *domain.Quiz = nil
+	var currentFlashcard domain.Flashcard
 	showAnswer := false
 
 	quizView := tview.NewGrid().
@@ -97,7 +97,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		SetSelectedFunc(func() {
 			appState.SelectedFlashcardSet.StartQuiz()
 			quiz = appState.SelectedFlashcardSet.Quiz
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
 			contentView.SetText(quiz.CurrentlySelectedCard().Question)
 			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", 1, len(quiz.Flashcards)))
@@ -114,7 +114,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		SetSelectedFunc(func() {
 			appState.SelectedFlashcardSet.ResetQuizProgress()
 			quiz = appState.SelectedFlashcardSet.Quiz
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
 			contentView.SetText(quiz.CurrentlySelectedCard().Question)
 			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", 1, len(quiz.Flashcards)))
@@ -137,7 +137,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		case tcell.KeyLeft:
 			if quiz.AreCardsLeft() {
 				quiz.GoToNextCard(false)
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
 				if quiz.Finished() {
 					nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -152,7 +152,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		case tcell.KeyRight:
 			if quiz.AreCardsLeft() {
 				quiz.GoToNextCard(true)
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
 				if quiz.Finished() {
 					nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -172,7 +172,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 
 		case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyDEL:
 			if quiz.CanUndo() {
-				showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 				currentFlashcard = quiz.Undo()
 			}
 
@@ -190,7 +190,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		}
 
 		contentView.SetText(contents)
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
 
 		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
@@ -202,7 +202,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 	unknownButton.SetSelectedFunc(func() {
 		if quiz.AreCardsLeft() {
 			quiz.GoToNextCard(false)
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
 			if quiz.Finished() {
 				nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -222,7 +222,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		}
 
 		contentView.SetText(contents)
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
 
 		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
@@ -231,7 +231,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 
 	undoButton.SetSelectedFunc(func() {
 		if quiz.CanUndo() {
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 			currentFlashcard = quiz.Undo()
 		}
 
@@ -243,7 +243,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		}
 
 		contentView.SetText(contents)
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
 
 		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
@@ -253,7 +253,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 	knowButton.SetSelectedFunc(func() {
 		if quiz.AreCardsLeft() {
 			quiz.GoToNextCard(true)
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
 			if quiz.Finished() {
 				nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -279,7 +279,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 		}
 
 		contentView.SetText(contents)
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
 
 		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
@@ -367,7 +367,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 			}
 
 			quiz = appState.SelectedFlashcardSet.Quiz
-			showAnswer = false || appState.SelectedFlashcardSet.Front == db.Answer
+			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 		}
 
 		if quiz.Finished() {
@@ -395,7 +395,7 @@ func InitQuizProgressTrackUi(appState *app.State) {
 
 		currentFlashcard = quiz.CurrentlySelectedCard()
 
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelected+1, len(quiz.Flashcards)))
+		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
 
 		known, unknown := quiz.GetKnownAndUnknownCount()
 		knowCount.SetText(strconv.Itoa(known))
