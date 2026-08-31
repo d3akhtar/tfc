@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/d3akhtar/tfc/utils"
 	"github.com/gdamore/tcell/v2"
@@ -16,7 +17,7 @@ type flashcardEditPrimitiveInfo struct {
 	Answer   *tview.TextArea
 }
 
-func InitFlashcardEditUi(appState *app.State) {
+func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_set.FlashcardSetRepo) {
 	var selectedFlashcardSet *domain.FlashcardSet = nil
 
 	var window *utils.SlidingWindow[domain.Flashcard]
@@ -216,8 +217,17 @@ func InitFlashcardEditUi(appState *app.State) {
 	finishButton := NewButton("Finish").
 		SetSelectedFunc(func() {
 			if appState.SelectedFlashcardSet == nil {
+				err := flashcardSetRepository.Create(appState.Context, selectedFlashcardSet)
+				if err != nil {
+					return
+				}
+
 				appState.SelectedFlashcardSet = selectedFlashcardSet
-				appState.FlashcardSets = append(appState.FlashcardSets, *selectedFlashcardSet)
+			}
+
+			err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
+			if err != nil {
+				return
 			}
 
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)

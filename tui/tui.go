@@ -1,10 +1,14 @@
 package tui
 
 import (
+	"database/sql"
 	"slices"
 	"strings"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard_set"
+	"github.com/d3akhtar/tfc/db/folder"
+	"github.com/d3akhtar/tfc/db/quiz"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -12,8 +16,8 @@ import (
 
 var (
 	filteredFolderFlashcardSetList []domain.FlashcardSet
-	filteredFlashcardSetList       []domain.FlashcardSet
-	filteredFolderList             []domain.Folder
+	filteredFlashcardSetList       []*domain.FlashcardSet
+	filteredFolderList             []*domain.Folder
 )
 
 var (
@@ -48,14 +52,18 @@ func SetDefaults() {
 	tview.Styles.PrimaryTextColor = Text
 }
 
-func Init(appState *app.State) {
-	InitHomeUi(appState)
-	InitLibraryUi(appState)
-	InitFlashcardEditUi(appState)
+func Init(appState *app.State, db *sql.DB) {
+	flashcardSetRepository := flashcard_set.NewFlashcardSetRepository(db)
+	folderRepositry := folder.NewFolderRepository(db)
+	quizRepository := quiz.NewQuizRepository(db)
+
+	InitHomeUi(appState, flashcardSetRepository, folderRepositry)
+	InitLibraryUi(appState, flashcardSetRepository, folderRepositry)
+	InitFlashcardEditUi(appState, flashcardSetRepository)
 	InitFlashcardSetPreview(appState)
-	InitFolderUi(appState)
+	InitFolderUi(appState, folderRepositry, flashcardSetRepository)
 	InitQuizNormalUi(appState)
-	InitQuizProgressTrackUi(appState)
+	InitQuizProgressTrackUi(appState, quizRepository)
 }
 
 func NewPaddedFrameAllSides(amount int) *tview.Frame {
@@ -110,14 +118,27 @@ func NewButton(title string) *tview.Button {
 		SetStyle(PrimaryButtonStyle)
 }
 
-func sortFolderCollection(option int, folders []domain.Folder) {
+func sortFolderCollection(option int, folders []*domain.Folder) {
 	switch option {
 	case recentOption:
-		slices.SortFunc(folders, func(a, b domain.Folder) int {
+		slices.SortFunc(folders, func(a, b *domain.Folder) int {
 			return -a.LastAccessed.Compare(b.LastAccessed)
 		})
 	case alphabeticalOption:
-		slices.SortFunc(folders, func(a, b domain.Folder) int {
+		slices.SortFunc(folders, func(a, b *domain.Folder) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+	}
+}
+
+func sortFlashcardSetPointerCollection(option int, flashcardSets []*domain.FlashcardSet) {
+	switch option {
+	case recentOption:
+		slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
+			return -a.LastAccessed.Compare(b.LastAccessed)
+		})
+	case alphabeticalOption:
+		slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
 			return strings.Compare(a.Name, b.Name)
 		})
 	}

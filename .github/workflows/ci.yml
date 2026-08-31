@@ -61,19 +61,13 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Run tests
-        run: go test ./... -json > test-results.json
+        run: go test ./...
       - name: Run tests with coverage
         run: |
           go test -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: go-test-results
-          path: test-results.json
       - name: Upload test coverage
         uses: actions/upload-artifact@v4
         with:
           name: go-test-coverage
           path: coverage.html
-        

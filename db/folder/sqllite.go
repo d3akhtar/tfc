@@ -223,7 +223,7 @@ func (r *FolderRepository) List(ctx context.Context, offset int, limit int) ([]*
 	query := `
 		SELECT f.Id, f.Name, f.LastAccessed, COUNT(ffs.FlashcardSetId)
 		FROM Folders f
-		JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
+		LEFT JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
 		GROUP BY f.Id
 		ORDER BY f.Id ASC
 		LIMIT $1 OFFSET $2

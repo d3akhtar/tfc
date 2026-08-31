@@ -27,6 +27,8 @@ type FlashcardSet struct {
 	Flashcards []Flashcard
 	shuffled   []Flashcard
 
+	FlashcardCount int
+
 	Quiz *Quiz
 }
 
@@ -46,7 +48,7 @@ func (f FlashcardSet) String() string {
 	return fmt.Sprintf(
 		"○ %s | %d flashcards | Last Accessed: %s",
 		f.Name,
-		len(f.Flashcards),
+		f.count(),
 		f.LastAccessed.Local().Format(time.RFC822),
 	)
 }
@@ -107,4 +109,12 @@ func (f *FlashcardSet) AddFlashcard(question, answer string) {
 
 func (f *FlashcardSet) ResetQuizProgress() {
 	f.Quiz = NewQuiz(f.Id, f.GetFlashcards())
+}
+
+func (f *FlashcardSet) count() int {
+	if len(f.Flashcards) == 0 {
+		return f.FlashcardCount
+	} else {
+		return len(f.Flashcards)
+	}
 }

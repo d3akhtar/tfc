@@ -2,8 +2,8 @@ package main
 
 import (
 	tfcapp "github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/tui"
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -12,22 +12,18 @@ func main() {
 
 	app := tview.NewApplication()
 
-	state := tfcapp.NewAppState(app)
+	database, err := db.InitializeSchema()
+	if err != nil {
+		panic(err)
+	}
 
-	tui.Init(state)
+	state := tfcapp.NewApp(app)
 
-	views := state.Navigation.Views()
+	tui.Init(state, database)
 
-	views.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlBackslash:
-			state.Navigation.RevertView()
-		}
+	state.Navigation.GoToView(tfcapp.VIEW_NAMES.Home)
 
-		return event
-	})
-
-	if err := app.SetRoot(views, true).EnableMouse(true).Run(); err != nil {
+	if err := app.SetRoot(state.Navigation.Views(), true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
 }
