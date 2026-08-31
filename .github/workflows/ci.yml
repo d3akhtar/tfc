@@ -58,7 +58,7 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Run tests
-        run: go test -json > test-results.json
+        run: go test ./... -json > test-results.json
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
