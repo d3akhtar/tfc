@@ -36,3 +36,6 @@ __debug_bin*
 
 # bin
 tfc
+
+# db
+app.db

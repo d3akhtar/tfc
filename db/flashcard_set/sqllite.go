@@ -71,6 +71,8 @@ func (r *FlashcardSetRepository) Create(ctx context.Context, entity *domain.Flas
 		}
 
 		for i, flashcard := range entity.Flashcards {
+			flashcard.FlashcardSetId = int(flashcardSetId)
+
 			result, err = stmt.ExecContext(ctx,
 				flashcard.Question,
 				flashcard.Answer,
@@ -79,7 +81,7 @@ func (r *FlashcardSetRepository) Create(ctx context.Context, entity *domain.Flas
 			)
 
 			if err != nil {
-				return fmt.Errorf("Error while adding flashcard for flashcard set with Id %d", entity.Id)
+				return fmt.Errorf("Error while adding flashcard for flashcard set with Id %d: %w", entity.Id, err)
 			}
 
 			flashcardId, _ := result.LastInsertId()
@@ -255,9 +257,11 @@ func (r *FlashcardSetRepository) GetQuizForFlashcardSet(ctx context.Context, ent
 
 func (r *FlashcardSetRepository) List(ctx context.Context, offset int, limit int) ([]*domain.FlashcardSet, error) {
 	query := `
-		SELECT Id, Name, Description, LastAccessed, TrackProgress, Front, Shuffle, ShuffleSeed
-		FROM FlashcardSets
-		ORDER BY Id ASC
+		SELECT fs.Id, fs.Name, fs.Description, fs.LastAccessed, fs.TrackProgress, fs.Front, fs.Shuffle, fs.ShuffleSeed, COUNT(fc.Id)
+		FROM FlashcardSets fs
+		LEFT JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
+		GROUP BY fs.Id
+		ORDER BY fs.Id ASC
 		LIMIT $1 OFFSET $2
 	`
 
@@ -280,6 +284,7 @@ func (r *FlashcardSetRepository) List(ctx context.Context, offset int, limit int
 			&fs.Front,
 			&fs.Shuffle,
 			&fs.ShuffleSeed,
+			&fs.FlashcardCount,
 		)
 
 		if err != nil {

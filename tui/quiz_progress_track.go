@@ -5,12 +5,13 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/quiz"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-func InitQuizProgressTrackUi(appState *app.State) {
+func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) {
 	finishedMessageFormat := "You finished the quiz with %d/%d cards learned! What do you want to do next?"
 
 	quizProgressTrack := tview.NewPages()

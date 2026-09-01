@@ -7,13 +7,18 @@ import (
 	"time"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard_set"
+	"github.com/d3akhtar/tfc/db/folder"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-func InitFolderUi(appState *app.State) {
-	folder := tview.NewPages()
+func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flashcardSetRepo flashcard_set.FlashcardSetRepo) {
+	flashcardSets := []*domain.FlashcardSet{}
+	folderFlashcardSets := []*domain.FlashcardSet{}
+
+	folderPage := tview.NewPages()
 
 	folderView := tview.NewGrid().
 		SetRows(3, -20, -2).
@@ -45,7 +50,7 @@ func InitFolderUi(appState *app.State) {
 
 	addFlashcardSetButton := NewButton("Add Flashcard Sets").
 		SetSelectedFunc(func() {
-			folder.SwitchToPage("flashcard")
+			folderPage.SwitchToPage("flashcard")
 		})
 
 	sortDropdown.
@@ -74,9 +79,9 @@ func InitFolderUi(appState *app.State) {
 			folderFlashcardSetList.Clear()
 			filteredFolderFlashcardSetList = []domain.FlashcardSet{}
 
-			for _, flashcardSet := range appState.SelectedFolder.FlashcardSets {
+			for _, flashcardSet := range folderFlashcardSets {
 				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
-					filteredFolderFlashcardSetList = append(filteredFolderFlashcardSetList, flashcardSet)
+					filteredFolderFlashcardSetList = append(filteredFolderFlashcardSetList, *flashcardSet)
 				}
 			}
 
@@ -103,21 +108,22 @@ func InitFolderUi(appState *app.State) {
 	flashcardSetList.
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			selectedFlashcardSet := appState.FlashcardSets[pos]
+			selectedFlashcardSet := flashcardSets[pos]
 
 			check := func(set domain.FlashcardSet) bool {
-				return set.Name == selectedFlashcardSet.Name &&
-					set.Description == selectedFlashcardSet.Description &&
-					slices.Equal(set.Flashcards, selectedFlashcardSet.Flashcards)
+				return set.Id == selectedFlashcardSet.Id
 			}
 
 			if slices.ContainsFunc(appState.SelectedFolder.FlashcardSets, check) {
 				appState.SelectedFolder.FlashcardSets = slices.DeleteFunc(appState.SelectedFolder.FlashcardSets, check)
+				folderRepository.AddFlashcardSetsToFolder(appState.Context, appState.SelectedFolder, []domain.FlashcardSet{*selectedFlashcardSet})
 				flashcardSetList.GetCell(row, 0).SetTextColor(tcell.ColorWhite)
 			} else {
-				appState.SelectedFolder.FlashcardSets = append(appState.SelectedFolder.FlashcardSets, selectedFlashcardSet)
+				appState.SelectedFolder.FlashcardSets = append(appState.SelectedFolder.FlashcardSets, *selectedFlashcardSet)
+				folderRepository.RemoveFlashcardSetsFromFolder(appState.Context, appState.SelectedFolder, []domain.FlashcardSet{*selectedFlashcardSet})
 				flashcardSetList.GetCell(row, 0).SetTextColor(tcell.ColorGreen)
 			}
+
 		})
 
 	SetBorderFocusAndBlurCallbacks(flashcardSetList.Box)
@@ -131,9 +137,9 @@ func InitFolderUi(appState *app.State) {
 	flashcardSetListSearchInputField := tview.NewInputField().
 		SetChangedFunc(func(text string) {
 			flashcardSetList.Clear()
-			filteredFlashcardSetList = []domain.FlashcardSet{}
+			filteredFlashcardSetList = []*domain.FlashcardSet{}
 
-			for _, flashcardSet := range appState.FlashcardSets {
+			for _, flashcardSet := range flashcardSets {
 				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
 					filteredFlashcardSetList = append(filteredFlashcardSetList, flashcardSet)
 				}
@@ -156,7 +162,7 @@ func InitFolderUi(appState *app.State) {
 
 	closeFlashcardSetAddViewButton := NewButton("Close").
 		SetSelectedFunc(func() {
-			folder.SwitchToPage("main")
+			folderPage.SwitchToPage("main")
 		})
 
 	flashcardSetListSearchInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -276,12 +282,12 @@ func InitFolderUi(appState *app.State) {
 		AddItem(folderFlashcardSetList, 1, 0, 1, 4, 0, 0, true).
 		AddItem(addFlashcardSetButton, 2, 0, 1, 4, 0, 0, false)
 
-	folder.
+	folderPage.
 		AddPage("main", folderView, true, true).
 		AddPage("flashcard", addFlashcardSetView, true, false)
 
-	folder.SetChangedFunc(func() {
-		if pg, _ := folder.GetFrontPage(); pg == "main" {
+	folderPage.SetChangedFunc(func() {
+		if pg, _ := folderPage.GetFrontPage(); pg == "main" {
 			searchFolderInputField.SetText("")
 
 			folderFlashcardSetList.Clear()
@@ -298,11 +304,25 @@ func InitFolderUi(appState *app.State) {
 		}
 	})
 
-	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folder, false, func() {
+	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folderPage, false, func() {
+		sets, err := flashcardSetRepo.List(appState.Context, 0, 50)
+		if err != nil {
+			return
+		}
+
+		flashcardSets = sets
+
+		sets, err = folderRepository.GetFlashcardSetsForFolder(appState.Context, appState.SelectedFolder)
+		if err != nil {
+			return
+		}
+
+		folderFlashcardSets = sets
+
 		searchFolderInputField.SetText("")
 
 		filteredFolderFlashcardSetList = slices.Clone(appState.SelectedFolder.FlashcardSets)
-		filteredFlashcardSetList = slices.Clone(appState.FlashcardSets)
+		filteredFlashcardSetList = slices.Clone(flashcardSets)
 
 		option, _ := sortDropdown.GetCurrentOption()
 		sortFlashcardSetCollection(option, filteredFolderFlashcardSetList)
