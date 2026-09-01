@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/db/utils"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/mattn/go-sqlite3"
 )
@@ -53,7 +54,7 @@ func (r *FolderRepository) AddFlashcardSetsToFolder(ctx context.Context, entity 
 }
 
 func (r *FolderRepository) Count(ctx context.Context) (int64, error) {
-	return db.CountQuery(r.db, ctx, "Folders")
+	return utils.CountQuery(r.db, ctx, "Folders")
 }
 
 func (r *FolderRepository) Create(ctx context.Context, entity *domain.Folder) error {
@@ -83,7 +84,7 @@ func (r *FolderRepository) Create(ctx context.Context, entity *domain.Folder) er
 }
 
 func (r *FolderRepository) Delete(ctx context.Context, id int) error {
-	return db.DeleteQuery(r.db, ctx, "Folders", id)
+	return utils.DeleteQuery(r.db, ctx, "Folders", id)
 }
 
 func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, entity *domain.Folder, filter string, limit, offset int) ([]*domain.FlashcardSet, error) {

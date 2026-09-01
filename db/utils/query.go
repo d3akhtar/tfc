@@ -1,9 +1,11 @@
-package db
+package utils
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	database "github.com/d3akhtar/tfc/db"
 )
 
 func CountQuery(db *sql.DB, ctx context.Context, table string) (int64, error) {
@@ -28,7 +30,7 @@ func DeleteQuery(db *sql.DB, ctx context.Context, table string, id int) error {
 	}
 
 	if rowsAffected == 0 {
-		return ErrNotFound
+		return database.ErrNotFound
 	}
 
 	return nil

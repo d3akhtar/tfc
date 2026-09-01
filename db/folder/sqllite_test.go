@@ -11,6 +11,7 @@ import (
 	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/folder"
+	"github.com/d3akhtar/tfc/db/utils/test"
 	"github.com/d3akhtar/tfc/domain"
 )
 
@@ -82,7 +83,7 @@ func TestFolderRepository_AddFlashcardSetsToFolder(t *testing.T) {
 	}
 
 	for i, fs := range folder.FlashcardSets {
-		err = testCmpFlashcardSet(&flashcardSets[i], &fs)
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], &fs)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -90,7 +91,7 @@ func TestFolderRepository_AddFlashcardSetsToFolder(t *testing.T) {
 
 	gotFlashcardSets, err := repo.GetFlashcardSetsForFolder(ctx, folder)
 	for i, got := range gotFlashcardSets {
-		err = testCmpFlashcardSet(&flashcardSets[i], got)
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], got)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -177,7 +178,7 @@ func TestFolderRepository_Create(t *testing.T) {
 	}
 
 	for i, got := range gotFolderFlashcardSets {
-		err = testCmpFlashcardSet(&flashcardSets[i], got)
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], got)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -254,7 +255,7 @@ func TestFolderRepository_FilterFlashcardSetsInFolder(t *testing.T) {
 	}
 
 	for i, got := range gotFolderFlashcardSets {
-		err = testCmpFlashcardSet(&flashcardSets[i], got)
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], got)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -269,7 +270,7 @@ func TestFolderRepository_FilterFlashcardSetsInFolder(t *testing.T) {
 		t.Fatalf("len(filtered) expected=%v, got=%v", 1, len(gotFolderFlashcardSets))
 	}
 
-	err = testCmpFlashcardSet(&flashcardSets[0], gotFolderFlashcardSets[0])
+	err = test_utils.TestCmpFlashcardSet(&flashcardSets[0], gotFolderFlashcardSets[0])
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -281,7 +282,7 @@ func TestFolderRepository_FilterFlashcardSetsInFolder(t *testing.T) {
 
 	for i, got := range gotFolderFlashcardSets {
 		expected := flashcardSets[i+4]
-		err = testCmpFlashcardSet(&expected, got)
+		err = test_utils.TestCmpFlashcardSet(&expected, got)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -308,7 +309,7 @@ func TestFolderRepository_GetById(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 
-	err = testCmpFolder(folder, got)
+	err = test_utils.TestCmpFolder(folder, got)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -358,7 +359,7 @@ func TestFolderRepository_GetFlashcardSetsForFolder(t *testing.T) {
 	}
 
 	for i, got := range gotFolderFlashcardSets {
-		err = testCmpFlashcardSet(&flashcardSets[i], got)
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], got)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -412,7 +413,7 @@ func TestFolderRepository_List(t *testing.T) {
 	}
 
 	for i, a := range got {
-		err := testCmpFolder(folders[i], a)
+		err := test_utils.TestCmpFolder(folders[i], a)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -429,7 +430,7 @@ func TestFolderRepository_List(t *testing.T) {
 
 	for i, a := range got {
 		expected := folders[i+3]
-		err := testCmpFolder(expected, a)
+		err := test_utils.TestCmpFolder(expected, a)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -466,7 +467,7 @@ func TestFolderRepository_Update(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 
-	err = testCmpFolder(folder, got)
+	err = test_utils.TestCmpFolder(folder, got)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -523,7 +524,7 @@ func TestFolderRepository_RemoveFlashcardSetsFromFolder(t *testing.T) {
 	expectedRemainingFlashcardSets := flashcardSets[4:]
 
 	for i, got := range gotFlashcardSets {
-		err = testCmpFlashcardSet(&expectedRemainingFlashcardSets[i], got)
+		err = test_utils.TestCmpFlashcardSet(&expectedRemainingFlashcardSets[i], got)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -577,7 +578,7 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 	}
 
 	for i, a := range got {
-		err := testCmpFolder(folders[i], a)
+		err := test_utils.TestCmpFolder(folders[i], a)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -594,7 +595,7 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 
 	for i, a := range got {
 		expected := folders[i+3]
-		err := testCmpFolder(expected, a)
+		err := test_utils.TestCmpFolder(expected, a)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
@@ -613,63 +614,8 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 		t.Fatalf("len(filtered) expected=%v, got=%v", 1, len(got))
 	}
 
-	err = testCmpFolder(folders[0], got[0])
+	err = test_utils.TestCmpFolder(folders[0], got[0])
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-}
-
-func testCmpFolder(expected, actual *domain.Folder) error {
-	if expected.Id != actual.Id {
-		return fmt.Errorf("folder Id expected=%v, got=%v", expected.Id, actual.Id)
-	}
-
-	if expected.Name != actual.Name {
-		return fmt.Errorf("folder Name expected=%v, got=%v", expected.Name, actual.Name)
-	}
-
-	if expected.LastAccessed.UTC().Truncate(time.Second).Compare(actual.LastAccessed.Truncate(time.Second)) != 0 {
-		return fmt.Errorf(
-			"folder LastAccessed expected=%v, got=%v",
-			expected.LastAccessed.UTC().Truncate(time.Second),
-			actual.LastAccessed.UTC().Truncate(time.Second))
-	}
-
-	return nil
-}
-
-func testCmpFlashcardSet(expected, actual *domain.FlashcardSet) error {
-	if expected.Id != actual.Id {
-		return fmt.Errorf("flashcard set Id expected=%v, got=%v", expected.Id, actual.Id)
-	}
-
-	if expected.Name != actual.Name {
-		return fmt.Errorf("flashcard set Name expected=%v, got=%v", expected.Name, actual.Name)
-	}
-
-	if expected.Description != actual.Description {
-		return fmt.Errorf("flashcard set Description expected=%v, got=%v", expected.Description, actual.Description)
-	}
-
-	if expected.LastAccessed.UTC() != actual.LastAccessed.UTC() {
-		return fmt.Errorf("flashcard set LastAccessedexpected=%v, got=%v", expected.LastAccessed.UTC(), actual.LastAccessed.UTC())
-	}
-
-	if expected.TrackProgress != actual.TrackProgress {
-		return fmt.Errorf("flashcard set TrackProgress expected=%v, got=%v", expected.TrackProgress, actual.TrackProgress)
-	}
-
-	if expected.Front != actual.Front {
-		return fmt.Errorf("flashcard set Front expected=%v, got=%v", expected.Front, actual.Front)
-	}
-
-	if expected.Shuffle != actual.Shuffle {
-		return fmt.Errorf("flashcard set Shuffle expected=%v, got=%v", expected.Shuffle, actual.Shuffle)
-	}
-
-	if expected.ShuffleSeed != actual.ShuffleSeed {
-		return fmt.Errorf("flashcard set ShuffleSeed expected=%v, got=%v", expected.ShuffleSeed, actual.ShuffleSeed)
-	}
-
-	return nil
 }
