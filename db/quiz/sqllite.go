@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/db/utils"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/mattn/go-sqlite3"
 )
@@ -23,7 +24,7 @@ func NewQuizRepository(db *sql.DB) *QuizRepository {
 }
 
 func (r *QuizRepository) Count(ctx context.Context) (int64, error) {
-	return db.CountQuery(r.db, ctx, "Quizzes")
+	return utils.CountQuery(r.db, ctx, "Quizzes")
 }
 
 func (r *QuizRepository) Create(ctx context.Context, entity *domain.Quiz) error {
@@ -72,7 +73,7 @@ func (r *QuizRepository) Create(ctx context.Context, entity *domain.Quiz) error 
 }
 
 func (r *QuizRepository) Delete(ctx context.Context, id int) error {
-	return db.DeleteQuery(r.db, ctx, "Quizzes", id)
+	return utils.DeleteQuery(r.db, ctx, "Quizzes", id)
 }
 
 func (r *QuizRepository) GetById(ctx context.Context, id int) (*domain.Quiz, error) {

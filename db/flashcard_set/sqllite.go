@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/db/utils"
 	"github.com/d3akhtar/tfc/domain"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -23,7 +24,7 @@ func NewFlashcardSetRepository(db *sql.DB) *FlashcardSetRepository {
 }
 
 func (r *FlashcardSetRepository) Count(ctx context.Context) (int64, error) {
-	return db.CountQuery(r.db, ctx, "FlashcardSets")
+	return utils.CountQuery(r.db, ctx, "FlashcardSets")
 }
 
 func (r *FlashcardSetRepository) Create(ctx context.Context, entity *domain.FlashcardSet) error {
@@ -94,7 +95,7 @@ func (r *FlashcardSetRepository) Create(ctx context.Context, entity *domain.Flas
 }
 
 func (r *FlashcardSetRepository) Delete(ctx context.Context, id int) error {
-	return db.DeleteQuery(r.db, ctx, "FlashcardSets", id)
+	return utils.DeleteQuery(r.db, ctx, "FlashcardSets", id)
 }
 
 func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter string, limit, offset int) ([]domain.FlashcardSet, error) {
