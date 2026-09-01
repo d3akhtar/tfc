@@ -16,13 +16,16 @@ func CountQuery(db *sql.DB, ctx context.Context, table string) (int64, error) {
 	return count, err
 }
 
-func DeleteQuery(db *sql.DB, ctx context.Context, table string, id int) error {
-	query := fmt.Sprintf("DELETE FROM %s WHERE Id = $1", table)
+func ExecStmtUpdate(stmt *sql.Stmt, ctx context.Context, args ...any) error {
+	return checkResultFromUpdateCall(func() (sql.Result, error) { return stmt.ExecContext(ctx, args...) })
+}
 
-	result, err := db.ExecContext(ctx, query, id)
-	if err != nil {
-		return err
-	}
+func ExecQueryUpdate(query string, db *sql.DB, ctx context.Context, args ...any) error {
+	return checkResultFromUpdateCall(func() (sql.Result, error) { return db.ExecContext(ctx, query, args...) })
+}
+
+func checkResultFromUpdateCall(update func() (sql.Result, error)) error {
+	result, err := update()
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
@@ -34,4 +37,9 @@ func DeleteQuery(db *sql.DB, ctx context.Context, table string, id int) error {
 	}
 
 	return nil
+}
+
+func DeleteQuery(db *sql.DB, ctx context.Context, table string, id int) error {
+	query := fmt.Sprintf("DELETE FROM %s WHERE Id = $1", table)
+	return ExecQueryUpdate(query, db, ctx, id)
 }

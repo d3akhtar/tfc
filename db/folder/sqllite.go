@@ -23,36 +23,6 @@ func NewFolderRepository(db *sql.DB) *FolderRepository {
 	return &FolderRepository{db}
 }
 
-func (r *FolderRepository) AddFlashcardSetsToFolder(ctx context.Context, entity *domain.Folder, flashcardSets []domain.FlashcardSet) error {
-	return db.WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
-		stmt, err := tx.PrepareContext(ctx, `
-			INSERT INTO FolderFlashcardSet (FolderId, FlashcardSetId)
-			VALUES (?, ?)
-		`)
-
-		if err != nil {
-			return fmt.Errorf("Failed to prepare task statement: %w", err)
-		}
-
-		defer stmt.Close()
-
-		for _, flashcardSet := range flashcardSets {
-			_, err := stmt.ExecContext(ctx,
-				entity.Id,
-				flashcardSet.Id,
-			)
-
-			if err != nil {
-				return fmt.Errorf("Failed to add flashcard set with Id %d to folder with Id %d", flashcardSet.Id, entity.Id)
-			}
-		}
-
-		entity.FlashcardSets = flashcardSets
-
-		return nil
-	})
-}
-
 func (r *FolderRepository) Count(ctx context.Context) (int64, error) {
 	return utils.CountQuery(r.db, ctx, "Folders")
 }
@@ -80,7 +50,7 @@ func (r *FolderRepository) Create(ctx context.Context, entity *domain.Folder) er
 	folderId, _ := result.LastInsertId()
 	entity.Id = int(folderId)
 
-	return r.AddFlashcardSetsToFolder(ctx, entity, entity.FlashcardSets)
+	return r.addFlashcardSetsToFolder(ctx, entity, entity.FlashcardSets)
 }
 
 func (r *FolderRepository) Delete(ctx context.Context, id int) error {
@@ -258,47 +228,53 @@ func (r *FolderRepository) List(ctx context.Context, offset int, limit int) ([]*
 }
 
 func (r *FolderRepository) Update(ctx context.Context, entity *domain.Folder) error {
-	query := `
-		UPDATE Folders
-		SET Name = $1, LastAccessed = $2
-		WHERE Id = $3
-	`
-	result, err := r.db.ExecContext(ctx, query, entity.Name, entity.LastAccessed, entity.Id)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return db.ErrNotFound
-	}
-
-	return nil
-}
-
-func (r *FolderRepository) RemoveFlashcardSetsFromFolder(ctx context.Context, entity *domain.Folder, flashcardSets []domain.FlashcardSet) error {
 	return db.WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
 		stmt, err := tx.PrepareContext(ctx, `
-			DELETE FROM FolderFlashcardSet
-			WHERE FolderId = $1
-			AND FlashcardSetId = $2
+			UPDATE Folders
+			SET Name = $1, LastAccessed = $2
+			WHERE Id = $3
 		`)
 
 		if err != nil {
-			return fmt.Errorf("Error while preparing statement: %w", err)
+			return fmt.Errorf("Error while preparing statement for folder update %w", err)
 		}
 
-		defer stmt.Close()
+		err = utils.ExecStmtUpdate(stmt, ctx, entity.Name, entity.LastAccessed, entity.Id)
 
-		for _, flashcardSet := range flashcardSets {
-			_, err := stmt.ExecContext(ctx, entity.Id, flashcardSet.Id)
+		stmt.Close()
+
+		stmt, err = tx.PrepareContext(ctx, `DELETE FROM FolderFlashcardSet WHERE FolderId = ?`)
+		if err != nil {
+			return fmt.Errorf("Error while preparing statement for folder update %w", err)
+		}
+
+		err = utils.ExecStmtUpdate(stmt, ctx, entity.Id)
+		if err != nil {
+			return err
+		}
+
+		stmt, err = tx.PrepareContext(ctx, `
+			INSERT OR IGNORE INTO FolderFlashcardSet (FolderId, FlashcardSetId) VALUES (?, ?)
+		`)
+
+		if err != nil {
+			return fmt.Errorf("Error while preparing statement for flashcard set folder flashcard set upsert %w", err)
+		}
+
+		for i, flashcardSet := range entity.FlashcardSets {
+			result, err := stmt.ExecContext(ctx,
+				entity.Id,
+				flashcardSet.Id,
+			)
 
 			if err != nil {
-				return fmt.Errorf("Error while removing flashcard set with Id %d to folder with Id %d", flashcardSet.Id, entity.Id)
+				return fmt.Errorf("Error while updating flashcard set in folder %v", err)
+			}
+
+			flashcardSetId, _ := result.LastInsertId()
+
+			if entity.FlashcardSets[i].Id == 0 {
+				entity.FlashcardSets[i].Id = int(flashcardSetId)
 			}
 		}
 
@@ -351,4 +327,34 @@ func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, lim
 	}
 
 	return folders, err
+}
+
+func (r *FolderRepository) addFlashcardSetsToFolder(ctx context.Context, entity *domain.Folder, flashcardSets []domain.FlashcardSet) error {
+	return db.WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
+		stmt, err := tx.PrepareContext(ctx, `
+			INSERT INTO FolderFlashcardSet (FolderId, FlashcardSetId)
+			VALUES (?, ?)
+		`)
+
+		if err != nil {
+			return fmt.Errorf("Failed to prepare task statement: %w", err)
+		}
+
+		defer stmt.Close()
+
+		for _, flashcardSet := range flashcardSets {
+			_, err := stmt.ExecContext(ctx,
+				entity.Id,
+				flashcardSet.Id,
+			)
+
+			if err != nil {
+				return fmt.Errorf("Failed to add flashcard set with Id %d to folder with Id %d", flashcardSet.Id, entity.Id)
+			}
+		}
+
+		entity.FlashcardSets = flashcardSets
+
+		return nil
+	})
 }

@@ -116,11 +116,9 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 
 			if slices.ContainsFunc(appState.SelectedFolder.FlashcardSets, check) {
 				appState.SelectedFolder.FlashcardSets = slices.DeleteFunc(appState.SelectedFolder.FlashcardSets, check)
-				folderRepository.AddFlashcardSetsToFolder(appState.Context, appState.SelectedFolder, []domain.FlashcardSet{*selectedFlashcardSet})
 				flashcardSetList.GetCell(row, 0).SetTextColor(tcell.ColorWhite)
 			} else {
 				appState.SelectedFolder.FlashcardSets = append(appState.SelectedFolder.FlashcardSets, *selectedFlashcardSet)
-				folderRepository.RemoveFlashcardSetsFromFolder(appState.Context, appState.SelectedFolder, []domain.FlashcardSet{*selectedFlashcardSet})
 				flashcardSetList.GetCell(row, 0).SetTextColor(tcell.ColorGreen)
 			}
 
