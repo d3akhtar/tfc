@@ -2,27 +2,29 @@ package tui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard_set"
+	"github.com/d3akhtar/tfc/db/folder"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-func InitHomeUi(appState *app.State) {
+func InitHomeUi(appState *app.State, flashcardSetRepositry flashcard_set.FlashcardSetRepo, folderRepository folder.FolderRepo) {
+	recentlyStudied := []*domain.FlashcardSet{}
+	folders := []*domain.Folder{}
+
 	home := tview.NewPages()
 
 	recentSetsStudies := tview.NewTable().
 		SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			appState.SelectedFlashcardSet = &appState.RecentlyStudied[pos]
+			appState.SelectedFlashcardSet = recentlyStudied[pos]
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
-
-	for i, flashcardSet := range appState.RecentlyStudied {
-		recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1).SetTextColor(Text))
-	}
 
 	recentSetsStudies.
 		SetFocusFunc(func() {
@@ -41,33 +43,27 @@ func InitHomeUi(appState *app.State) {
 		SetBorderPadding(1, 1, 1, 1).
 		SetBackgroundColor(Background)
 
-	folders := tview.NewTable().
+	foldersTable := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, true)
 
-	folders.SetSelectedFunc(func(row, column int) {
+	foldersTable.SetSelectedFunc(func(row, column int) {
 		pos := (row * 3) + column
-		appState.SelectedFolder = &appState.Folders[pos]
+		appState.SelectedFolder = folders[pos]
 		appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 	})
 
-	for i, loadedFolder := range appState.Folders {
-		row := i / 3
-		column := i % 3
-		folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
-	}
-
-	folders.
+	foldersTable.
 		SetBorder(true).
 		SetTitle("Folders").
 		SetTitleAlign(tview.AlignLeft).
 		SetFocusFunc(func() {
-			folders.SetBorderColor(Focused)
-			folders.SetTitleColor(Focused)
+			foldersTable.SetBorderColor(Focused)
+			foldersTable.SetTitleColor(Focused)
 		}).
 		SetBlurFunc(func() {
-			folders.SetBorderColor(BoxBorder)
-			folders.SetTitleColor(BoxBorder)
+			foldersTable.SetBorderColor(BoxBorder)
+			foldersTable.SetTitleColor(BoxBorder)
 		}).
 		SetBorderPadding(1, 1, 2, 0).
 		SetBackgroundColor(Background).
@@ -91,19 +87,24 @@ func InitHomeUi(appState *app.State) {
 		home.HidePage(newFolderPageName)
 		appState.App.SetFocus(createFlashcardSetButton)
 
-		appState.Folders = append(appState.Folders, domain.Folder{
+		newFolder := &domain.Folder{
 			Name:          formNewFolderName,
 			FlashcardSets: []domain.FlashcardSet{},
-		})
+			LastAccessed:  time.Now(),
+		}
+
+		err := folderRepository.Create(appState.Context, newFolder)
+		if err != nil {
+			// At some point, make a separate page that displays errors
+			return
+		}
+
+		folders = append(folders, newFolder)
 
 		newFolderNameInputField.SetText("")
-
-		folders.Clear()
-		for i, loadedFolder := range appState.Folders {
-			row := i / 3
-			column := i % 3
-			folders.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1))
-		}
+		row := (len(folders) - 1) / 3
+		column := (len(folders) - 1) % 3
+		foldersTable.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", newFolder.Name)).SetExpansion(1))
 	}
 
 	newFolderForm := tview.NewForm().
@@ -182,20 +183,20 @@ func InitHomeUi(appState *app.State) {
 		SetRows(-1, -1, -1).
 		SetColumns(-1, -1).
 		AddItem(recentSetsStudies, 0, 0, 1, 2, 0, 0, true).
-		AddItem(folders, 1, 0, 1, 1, 0, 0, false).
+		AddItem(foldersTable, 1, 0, 1, 1, 0, 0, false).
 		AddItem(create, 1, 1, 1, 1, 0, 0, false).
 		AddItem(goToLibrary, 2, 0, 1, 2, 0, 0, false)
 
 	recentSetsStudies.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			appState.App.SetFocus(folders)
+			appState.App.SetFocus(foldersTable)
 		}
 
 		return event
 	})
 
-	folders.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	foldersTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
 			appState.App.SetFocus(create)
@@ -213,7 +214,7 @@ func InitHomeUi(appState *app.State) {
 		case tcell.KeyTab:
 			appState.App.SetFocus(goToLibraryButton)
 		case tcell.KeyBacktab:
-			appState.App.SetFocus(folders)
+			appState.App.SetFocus(foldersTable)
 		case tcell.KeyUp:
 			appState.App.SetFocus(createFlashcardSetButton)
 		case tcell.KeyDown:
@@ -242,10 +243,30 @@ func InitHomeUi(appState *app.State) {
 	home.AddPage(newFolderPageName, newFolderFormLayout, true, false)
 
 	appState.Navigation.AddView(app.VIEW_NAMES.Home, home, true, func() {
+		list, err := flashcardSetRepositry.List(appState.Context, 0, 50)
+		if err != nil {
+			return
+		}
+
+		recentlyStudied = list
+
+		folders, err = folderRepository.List(appState.Context, 0, 50)
+		if err != nil {
+			return
+		}
+
 		recentSetsStudies.Clear()
 
-		for i, flashcardSet := range appState.RecentlyStudied {
+		for i, flashcardSet := range recentlyStudied {
 			recentSetsStudies.SetCell(i, 0, tview.NewTableCell(flashcardSet.String()).SetExpansion(1))
+		}
+
+		foldersTable.Clear()
+
+		for i, loadedFolder := range folders {
+			row := i / 3
+			column := i % 3
+			foldersTable.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
 		}
 	})
 }

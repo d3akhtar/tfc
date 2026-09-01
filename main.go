@@ -2,6 +2,7 @@ package main
 
 import (
 	tfcapp "github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/tui"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -12,9 +13,14 @@ func main() {
 
 	app := tview.NewApplication()
 
+	database, err := db.InitializeSchema()
+	if err != nil {
+		panic(err)
+	}
+
 	state := tfcapp.NewAppState(app)
 
-	tui.Init(state)
+	tui.Init(state, database)
 
 	views := state.Navigation.Views()
 
