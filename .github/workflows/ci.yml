@@ -44,7 +44,12 @@ jobs:
         with:
           go-version: '1.21.x'
       - name: Check formatting
-        run: test -z "$(gofmt -l .)"
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "The following files are not formatted properly:"
+            gofmt -l .
+            exit 1
+          fi
   test:
     name: Test
     runs-on: ubuntu-latest

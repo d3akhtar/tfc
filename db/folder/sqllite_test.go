@@ -40,64 +40,6 @@ func initTestSchema(database *sql.DB) error {
 	return err
 }
 
-func TestFolderRepository_AddFlashcardSetsToFolder(t *testing.T) {
-	ctx := context.Background()
-	database := testDB(t)
-	repo := folder.NewFolderRepository(database)
-	flashcardSetRepo := flashcard_set.NewFlashcardSetRepository(database)
-
-	flashcardSets := []domain.FlashcardSet{}
-	for i := range 10 {
-		flashcardSet := domain.FlashcardSet{
-			Id:            i,
-			Name:          fmt.Sprintf("name%d", i),
-			Description:   fmt.Sprintf("desc%d", i),
-			LastAccessed:  time.Now(),
-			TrackProgress: i%2 == 0,
-			Front:         domain.FlashcardFront((i + 1) % 2),
-			Shuffle:       i%2 == 0,
-			ShuffleSeed:   i + 20,
-		}
-
-		err := flashcardSetRepo.Create(ctx, &flashcardSet)
-		if err != nil {
-			t.Fatalf("Unexpected error %v", err)
-		}
-
-		flashcardSets = append(flashcardSets, flashcardSet)
-	}
-
-	folder := &domain.Folder{
-		Name:         "folder",
-		LastAccessed: time.Now(),
-	}
-
-	err := repo.Create(ctx, folder)
-	if err != nil {
-		t.Fatalf("Unexpected error %v", err)
-	}
-
-	err = repo.AddFlashcardSetsToFolder(ctx, folder, flashcardSets)
-	if err != nil {
-		t.Fatalf("Unexpected error %v", err)
-	}
-
-	for i, fs := range folder.FlashcardSets {
-		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], &fs)
-		if err != nil {
-			t.Errorf("(%d) %v", i, err)
-		}
-	}
-
-	gotFlashcardSets, err := repo.GetFlashcardSetsForFolder(ctx, folder)
-	for i, got := range gotFlashcardSets {
-		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], got)
-		if err != nil {
-			t.Errorf("(%d) %v", i, err)
-		}
-	}
-}
-
 func TestFolderRepository_Count(t *testing.T) {
 	ctx := context.Background()
 	database := testDB(t)
@@ -445,44 +387,6 @@ func TestFolderRepository_Update(t *testing.T) {
 	ctx := context.Background()
 	database := testDB(t)
 	repo := folder.NewFolderRepository(database)
-
-	folder := &domain.Folder{
-		Name:         "folder",
-		LastAccessed: time.Now(),
-	}
-
-	err := repo.Create(ctx, folder)
-	if err != nil {
-		t.Fatalf("Unexpected error %v", err)
-	}
-
-	folder.Name = "new folder name"
-	err = repo.Update(ctx, folder)
-	if err != nil {
-		t.Fatalf("Unexpected error %v", err)
-	}
-
-	got, err := repo.GetById(ctx, folder.Id)
-	if err != nil {
-		t.Fatalf("Unexpected error %v", err)
-	}
-
-	err = test_utils.TestCmpFolder(folder, got)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	folder.Id = 2
-	err = repo.Update(ctx, folder)
-	if err != db.ErrNotFound {
-		t.Fatalf("expected=%v, got=%v", db.ErrNotFound, err)
-	}
-}
-
-func TestFolderRepository_RemoveFlashcardSetsFromFolder(t *testing.T) {
-	ctx := context.Background()
-	database := testDB(t)
-	repo := folder.NewFolderRepository(database)
 	flashcardSetRepo := flashcard_set.NewFlashcardSetRepository(database)
 
 	flashcardSets := []domain.FlashcardSet{}
@@ -517,17 +421,69 @@ func TestFolderRepository_RemoveFlashcardSetsFromFolder(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 
-	err = repo.RemoveFlashcardSetsFromFolder(ctx, folder, flashcardSets[:4])
+	folder.Name = "new folder name"
+	err = repo.Update(ctx, folder)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
 
-	gotFlashcardSets, err := repo.GetFlashcardSetsForFolder(ctx, folder)
+	got, err := repo.GetById(ctx, folder.Id)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
 
-	expectedRemainingFlashcardSets := flashcardSets[4:]
+	err = test_utils.TestCmpFolder(folder, got)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-	for i, got := range gotFlashcardSets {
-		err = test_utils.TestCmpFlashcardSet(&expectedRemainingFlashcardSets[i], got)
+	gotFlashcardSets, err := repo.GetFlashcardSetsForFolder(ctx, got)
+	for i, gotFlashcardSet := range gotFlashcardSets {
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], gotFlashcardSet)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}
+	}
+
+	for i := 11; i <= 20; i++ {
+		flashcardSet := domain.FlashcardSet{
+			Id:            i,
+			Name:          fmt.Sprintf("name%d", i),
+			Description:   fmt.Sprintf("desc%d", i),
+			LastAccessed:  time.Now(),
+			TrackProgress: i%2 == 0,
+			Front:         domain.FlashcardFront((i + 1) % 2),
+			Shuffle:       i%2 == 0,
+			ShuffleSeed:   i + 20,
+		}
+
+		err := flashcardSetRepo.Create(ctx, &flashcardSet)
+		if err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
+
+		flashcardSets = append(flashcardSets, flashcardSet)
+	}
+
+	got.FlashcardSets = flashcardSets
+
+	err = repo.Update(ctx, got)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	gotFlashcardSets, err = repo.GetFlashcardSetsForFolder(ctx, got)
+	for i, gotFlashcardSet := range gotFlashcardSets {
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], gotFlashcardSet)
+		if err != nil {
+			t.Errorf("(%d) %v", i, err)
+		}
+	}
+
+	folder.Id = 2
+	err = repo.Update(ctx, folder)
+	if err != db.ErrNotFound {
+		t.Fatalf("expected=%v, got=%v", db.ErrNotFound, err)
 	}
 }
 

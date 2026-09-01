@@ -307,18 +307,9 @@ func (r *QuizRepository) Update(ctx context.Context, entity *domain.Quiz) error 
 			return fmt.Errorf("Error while preparing statement for quiz update %w", err)
 		}
 
-		result, err := stmt.ExecContext(ctx, entity.CurrentlySelectedIndex, entity.Id)
+		err = utils.ExecStmtUpdate(stmt, ctx, entity.CurrentlySelectedIndex, entity.Id)
 		if err != nil {
 			return err
-		}
-
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		if rowsAffected == 0 {
-			return db.ErrNotFound
 		}
 
 		stmt.Close()
@@ -331,18 +322,9 @@ func (r *QuizRepository) Update(ctx context.Context, entity *domain.Quiz) error 
 			return fmt.Errorf("Error while preparing statement for quiz update %w", err)
 		}
 
-		result, err = stmt.ExecContext(ctx, entity.Id)
+		err = utils.ExecStmtUpdate(stmt, ctx, entity.Id)
 		if err != nil {
 			return err
-		}
-
-		rowsAffected, err = result.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		if rowsAffected == 0 {
-			return db.ErrNotFound
 		}
 
 		stmt.Close()

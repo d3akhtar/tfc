@@ -321,7 +321,7 @@ func (r *FlashcardSetRepository) Update(ctx context.Context, entity *domain.Flas
 			return fmt.Errorf("Error while preparing statement for flashcard set update %w", err)
 		}
 
-		result, err := stmt.ExecContext(ctx,
+		err = utils.ExecStmtUpdate(stmt, ctx,
 			entity.Name,
 			entity.Description,
 			entity.LastAccessed,
@@ -334,15 +334,6 @@ func (r *FlashcardSetRepository) Update(ctx context.Context, entity *domain.Flas
 
 		if err != nil {
 			return err
-		}
-
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		if rowsAffected == 0 {
-			return db.ErrNotFound
 		}
 
 		stmt.Close()
@@ -358,7 +349,7 @@ func (r *FlashcardSetRepository) Update(ctx context.Context, entity *domain.Flas
 		}
 
 		for i, flashcard := range entity.Flashcards {
-			result, err = stmt.ExecContext(ctx,
+			result, err := stmt.ExecContext(ctx,
 				flashcard.Question,
 				flashcard.Answer,
 				flashcard.Position,

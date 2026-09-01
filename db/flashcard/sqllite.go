@@ -85,21 +85,7 @@ func (r *FlashcardRepository) Update(ctx context.Context, entity *domain.Flashca
 		WHERE Id = $4
 	`
 
-	result, err := r.db.ExecContext(ctx, query, entity.Question, entity.Answer, entity.Position, entity.Id)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return db.ErrNotFound
-	}
-
-	return nil
+	return utils.ExecQueryUpdate(query, r.db, ctx, entity.Question, entity.Answer, entity.Position, entity.Id)
 }
 
 func (r *FlashcardRepository) Delete(ctx context.Context, id int) error {
@@ -184,19 +170,5 @@ func (r *FlashcardRepository) UpdateFlashcardPosition(ctx context.Context, entit
 		WHERE Id = $2
 	`
 
-	result, err := r.db.ExecContext(ctx, query, newPos, entity.Id)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return db.ErrNotFound
-	}
-
-	return nil
+	return utils.ExecQueryUpdate(query, r.db, ctx, newPos, entity.Id)
 }
