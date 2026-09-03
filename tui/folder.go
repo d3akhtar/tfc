@@ -14,9 +14,8 @@ import (
 	"github.com/rivo/tview"
 )
 
-func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flashcardSetRepo flashcard_set.FlashcardSetRepo) {
+func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flashcardSetRepository flashcard_set.FlashcardSetRepo) {
 	flashcardSets := []*domain.FlashcardSet{}
-	folderFlashcardSets := []*domain.FlashcardSet{}
 
 	folderPage := tview.NewPages()
 
@@ -42,9 +41,17 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 	folderFlashcardSetList := tview.NewTable().SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			selectedFlashcardSet := appState.SelectedFolder.FlashcardSets[pos]
+			selectedFlashcardSet := flashcardSets[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
-			appState.SelectedFlashcardSet = &selectedFlashcardSet
+			appState.SelectedFlashcardSet = selectedFlashcardSet
+
+			flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet)
+			if err != nil {
+				return
+			}
+
+			appState.SelectedFlashcardSet.Flashcards = flashcards
+
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
@@ -79,9 +86,9 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 			folderFlashcardSetList.Clear()
 			filteredFolderFlashcardSetList = []domain.FlashcardSet{}
 
-			for _, flashcardSet := range folderFlashcardSets {
+			for _, flashcardSet := range appState.SelectedFolder.FlashcardSets {
 				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
-					filteredFolderFlashcardSetList = append(filteredFolderFlashcardSetList, *flashcardSet)
+					filteredFolderFlashcardSetList = append(filteredFolderFlashcardSetList, flashcardSet)
 				}
 			}
 
@@ -280,12 +287,8 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		AddItem(folderFlashcardSetList, 1, 0, 1, 4, 0, 0, true).
 		AddItem(addFlashcardSetButton, 2, 0, 1, 4, 0, 0, false)
 
-	folderPage.
-		AddPage("main", folderView, true, true).
-		AddPage("flashcard", addFlashcardSetView, true, false)
-
 	folderPage.SetChangedFunc(func() {
-		if pg, _ := folderPage.GetFrontPage(); pg == "main" {
+		if pg, _ := folderPage.GetFrontPage(); pg == "main" && appState.SelectedFolder != nil {
 			searchFolderInputField.SetText("")
 
 			folderFlashcardSetList.Clear()
@@ -302,20 +305,29 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		}
 	})
 
-	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folderPage, false, func() {
-		sets, err := flashcardSetRepo.List(appState.Context, 0, 50)
+	folderPage.
+		AddPage("main", folderView, true, true).
+		AddPage("flashcard", addFlashcardSetView, true, false)
+
+	refresh := func() error {
+		sets, err := flashcardSetRepository.List(appState.Context, 0, 50)
 		if err != nil {
-			return
+			return err
 		}
 
 		flashcardSets = sets
 
-		sets, err = folderRepository.GetFlashcardSetsForFolder(appState.Context, appState.SelectedFolder)
+		folderFlashcardSetPointers, err := folderRepository.GetFlashcardSetsForFolder(appState.Context, appState.SelectedFolder)
 		if err != nil {
-			return
+			return err
 		}
 
-		folderFlashcardSets = sets
+		folderFlashcardSets := make([]domain.FlashcardSet, 0, len(folderFlashcardSetPointers))
+		for _, fc := range folderFlashcardSetPointers {
+			folderFlashcardSets = append(folderFlashcardSets, *fc)
+		}
+
+		appState.SelectedFolder.FlashcardSets = folderFlashcardSets
 
 		searchFolderInputField.SetText("")
 
@@ -356,5 +368,13 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 				&tview.TableCell{Text: flashcardSet.String(), BackgroundColor: Background, Color: col, Expansion: 1},
 			)
 		}
-	})
+
+		return nil
+	}
+
+	exit := func() error {
+		return folderRepository.Update(appState.Context, appState.SelectedFolder)
+	}
+
+	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folderPage, false, refresh, exit)
 }

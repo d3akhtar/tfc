@@ -24,6 +24,18 @@ func NewApp(app *tview.Application) *State {
 
 	views := nav.Views()
 
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlC:
+			err := nav.views[nav.MostRecentlyVisitedViewName()].exit()
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		return event
+	})
+
 	views.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlBackslash:

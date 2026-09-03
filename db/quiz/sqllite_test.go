@@ -513,7 +513,7 @@ func TestQuizRepository_Update(t *testing.T) {
 	}
 }
 
-func TestQuizRepository_CreateQuizForUnknownFlashcards(t *testing.T) {
+func TestQuizRepository_ReplaceQuiz(t *testing.T) {
 	ctx := context.Background()
 	database := testDB(t)
 	repo := quiz.NewQuizRepository(database)
@@ -568,7 +568,7 @@ func TestQuizRepository_CreateQuizForUnknownFlashcards(t *testing.T) {
 
 	quiz = domain.NewQuizFromOldQuiz(quiz)
 
-	err = repo.CreateQuizForUnknownFlashcards(ctx, quiz)
+	err = repo.ReplaceQuiz(ctx, quiz)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}

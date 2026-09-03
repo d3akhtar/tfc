@@ -316,8 +316,8 @@ func (r *QuizRepository) Update(ctx context.Context, entity *domain.Quiz) error 
 
 		stmt, err = tx.PrepareContext(ctx, `
 			INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (QuizId, FlashcardId, Position)
-			DO UPDATE SET Position = $3, IsUnknown = $4
+			ON CONFLICT (QuizId, Position)
+			DO UPDATE SET FlashcardId = $2, Position = $3, IsUnknown = $4
 		`)
 
 		if err != nil {
@@ -344,7 +344,7 @@ func (r *QuizRepository) Update(ctx context.Context, entity *domain.Quiz) error 
 	})
 }
 
-func (r *QuizRepository) CreateQuizForUnknownFlashcards(ctx context.Context, entity *domain.Quiz) error {
+func (r *QuizRepository) ReplaceQuiz(ctx context.Context, entity *domain.Quiz) error {
 	return db.WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
 		stmt, err := tx.PrepareContext(ctx, `
 			UPDATE Quizzes

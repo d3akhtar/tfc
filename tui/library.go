@@ -17,7 +17,9 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 	flashcardSets := []*domain.FlashcardSet{}
 	folders := []*domain.Folder{}
 
-	library := tview.NewGrid().
+	library := tview.NewPages()
+
+	libraryGrid := tview.NewGrid().
 		SetRows(3, -10, -10).
 		SetColumns(-5, 3, -1)
 
@@ -45,6 +47,14 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 			selectedFlashcardSet := filteredFlashcardSetList[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
 			appState.SelectedFlashcardSet = selectedFlashcardSet
+
+			flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet)
+			if err != nil {
+				return
+			}
+
+			appState.SelectedFlashcardSet.Flashcards = flashcards
+
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
@@ -189,7 +199,7 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 		return event
 	})
 
-	library.
+	libraryGrid.
 		AddItem(searchFolderInputField, 0, 0, 1, 1, 0, 0, false).
 		AddItem(tview.NewBox(), 0, 1, 1, 1, 0, 0, false).
 		AddItem(
@@ -202,17 +212,17 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 		AddItem(folderList, 1, 0, 1, 3, 0, 0, true).
 		AddItem(flashcardSetList, 2, 0, 1, 3, 0, 0, false)
 
-	appState.Navigation.AddView(app.VIEW_NAMES.Library, library, false, func() {
+	refresh := func() error {
 		sets, err := flashcardSetRepository.List(appState.Context, 0, 50)
 		if err != nil {
-			return
+			return err
 		}
 
 		flashcardSets = sets
 
 		folders, err = folderRepository.List(appState.Context, 0, 50)
 		if err != nil {
-			return
+			return err
 		}
 
 		searchFolderInputField.SetText("")
@@ -243,5 +253,11 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 				tview.NewTableCell(folder.String()).SetExpansion(1),
 			)
 		}
-	})
+
+		return nil
+	}
+
+	library.AddPage("main", libraryGrid, true, true)
+
+	appState.Navigation.AddView(app.VIEW_NAMES.Library, library, false, refresh, nil)
 }

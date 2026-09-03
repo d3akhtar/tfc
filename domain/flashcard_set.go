@@ -66,6 +66,7 @@ func (f *FlashcardSet) SetShuffle(val bool) {
 	if f.Shuffle {
 		f.ShuffleSeed = rand.Int()
 	} else {
+		f.ShuffleSeed = 0
 		f.shuffled = nil
 	}
 }

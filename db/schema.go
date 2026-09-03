@@ -57,7 +57,7 @@ const schema = `
 		Position INTEGER NOT NULL,
 		IsUnknown INTEGER NOT NULL DEFAULT 0 CHECK (IsUnknown IN (0, 1)),
 
-		PRIMARY KEY (QuizId, FlashcardId, Position),
+		PRIMARY KEY (QuizId, Position),
 
 		FOREIGN KEY(FlashcardId) REFERENCES Flashcards(Id) ON DELETE CASCADE,
 		FOREIGN KEY(QuizId) REFERENCES Quizzes(Id) ON DELETE CASCADE

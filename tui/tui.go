@@ -60,7 +60,7 @@ func Init(appState *app.State, db *sql.DB) {
 	InitHomeUi(appState, flashcardSetRepository, folderRepositry)
 	InitLibraryUi(appState, flashcardSetRepository, folderRepositry)
 	InitFlashcardEditUi(appState, flashcardSetRepository)
-	InitFlashcardSetPreview(appState)
+	InitFlashcardSetPreview(appState, flashcardSetRepository, quizRepository)
 	InitFolderUi(appState, folderRepositry, flashcardSetRepository)
 	InitQuizNormalUi(appState)
 	InitQuizProgressTrackUi(appState, quizRepository)

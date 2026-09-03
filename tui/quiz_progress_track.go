@@ -19,6 +19,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 	var quiz *domain.Quiz = nil
 	var currentFlashcard domain.Flashcard
 	showAnswer := false
+	flashcardSetShuffleSeed := 0
 
 	quizView := tview.NewGrid().
 		SetRows(44, -1)
@@ -100,6 +101,8 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 			quiz = appState.SelectedFlashcardSet.Quiz
 			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
+			quizRepository.ReplaceQuiz(appState.Context, quiz)
+
 			contentView.SetText(quiz.CurrentlySelectedCard().Question)
 			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", 1, len(quiz.Flashcards)))
 
@@ -114,6 +117,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 	resetProgressButton := NewButton("Reset Progress").
 		SetSelectedFunc(func() {
 			appState.SelectedFlashcardSet.ResetQuizProgress()
+			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet.Quiz)
 			quiz = appState.SelectedFlashcardSet.Quiz
 			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 
@@ -359,15 +363,23 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 			}
 		})
 
-	appState.Navigation.AddView(app.VIEW_NAMES.QuizProgressTrack, quizProgressTrack, false, func() {
+	refresh := func() error {
 		studyRemainingCardsButton.SetDisabled(false)
 
-		if quiz == nil || quiz != appState.SelectedFlashcardSet.Quiz {
+		if quiz == nil ||
+			(appState.SelectedFlashcardSet.Quiz != nil &&
+				(quiz.Id != appState.SelectedFlashcardSet.Quiz.Id ||
+					appState.SelectedFlashcardSet.ShuffleSeed != flashcardSetShuffleSeed)) {
 			if appState.SelectedFlashcardSet.Quiz == nil {
 				appState.SelectedFlashcardSet.StartQuiz()
+				err := quizRepository.Create(appState.Context, appState.SelectedFlashcardSet.Quiz)
+				if err != nil {
+					return err
+				}
 			}
 
 			quiz = appState.SelectedFlashcardSet.Quiz
+			flashcardSetShuffleSeed = appState.SelectedFlashcardSet.ShuffleSeed
 			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
 		}
 
@@ -382,24 +394,30 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 				studyRemainingCardsButton.SetDisabled(true)
 				appState.SetFocus(resetProgressButton)
 			}
-
-			return
-		}
-
-		quizProgressTrack.SwitchToPage("main")
-
-		if showAnswer {
-			contentView.SetText(quiz.CurrentlySelectedCard().Answer)
 		} else {
-			contentView.SetText(quiz.CurrentlySelectedCard().Question)
+			quizProgressTrack.SwitchToPage("main")
+
+			if showAnswer {
+				contentView.SetText(quiz.CurrentlySelectedCard().Answer)
+			} else {
+				contentView.SetText(quiz.CurrentlySelectedCard().Question)
+			}
+
+			currentFlashcard = quiz.CurrentlySelectedCard()
+
+			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
+
+			known, unknown := quiz.GetKnownAndUnknownCount()
+			knowCount.SetText(strconv.Itoa(known))
+			unknownCount.SetText(strconv.Itoa(unknown))
 		}
 
-		currentFlashcard = quiz.CurrentlySelectedCard()
+		return nil
+	}
 
-		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", quiz.CurrentlySelectedIndex+1, len(quiz.Flashcards)))
+	exit := func() error {
+		return quizRepository.Update(appState.Context, quiz)
+	}
 
-		known, unknown := quiz.GetKnownAndUnknownCount()
-		knowCount.SetText(strconv.Itoa(known))
-		unknownCount.SetText(strconv.Itoa(unknown))
-	})
+	appState.Navigation.AddView(app.VIEW_NAMES.QuizProgressTrack, quizProgressTrack, false, refresh, exit)
 }
