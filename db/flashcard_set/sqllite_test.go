@@ -42,8 +42,8 @@ func testDB(t *testing.T, init bool) *sql.DB {
 
 				INSERT INTO Quizzes (FlashcardSetId) VALUES (1);
 
-				INSERT INTO QuizzesUnknownFlashcard (QuizId, FlashcardId, Position) VALUES (1, 2, 1);
-				INSERT INTO QuizzesUnknownFlashcard (QuizId, FlashcardId, Position) VALUES (1, 3, 2);
+				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 2, 1, 1);
+				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 3, 2, 1);
 			`,
 		)
 
@@ -365,8 +365,15 @@ func TestFlashcardSetRepository_GetQuizForFlashcardSet(t *testing.T) {
 		t.Fatalf("quiz Id expected=%v, got=%v", 1, quiz.Id)
 	}
 
-	if !slices.Equal(quiz.Unknown, []int{1, 2}) {
-		t.Fatalf("quiz Unknown expected=%v, got=%v", []int{1, 2}, quiz.Unknown)
+	expectedUnknownPositions := []int{1, 2}
+	if len(expectedUnknownPositions) != quiz.Unknown.Length() {
+		t.Fatalf("length expected=%d, got=%d", len(expectedUnknownPositions), quiz.Unknown.Length())
+	}
+
+	for _, i := range expectedUnknownPositions {
+		if !quiz.Unknown.Contains(i) {
+			t.Errorf("quiz Unknown expected to contain=%v", i)
+		}
 	}
 }
 
