@@ -8,15 +8,15 @@ import (
 )
 
 type HashSet[T cmp.Ordered] struct {
-	items map[T]any
+	items map[T]struct{}
 }
 
 func NewHashSet[T cmp.Ordered]() HashSet[T] {
-	return HashSet[T]{items: make(map[T]any)}
+	return HashSet[T]{items: make(map[T]struct{})}
 }
 
 func NewHashSetWithItems[T cmp.Ordered](items []T) HashSet[T] {
-	set := HashSet[T]{items: make(map[T]any, len(items))}
+	set := HashSet[T]{items: make(map[T]struct{}, len(items))}
 	for _, item := range items {
 		set.Add(item)
 	}
@@ -29,7 +29,7 @@ func (set *HashSet[T]) Add(item T) {
 }
 
 func (set *HashSet[T]) Remove(item T) {
-	set.items[item] = struct{}{}
+	delete(set.items, item)
 }
 
 func (set *HashSet[T]) Contains(item T) bool {
