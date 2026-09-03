@@ -54,8 +54,8 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		SetBorders(false).
 		SetSelectable(true, true)
 
-	foldersTable.SetSelectedFunc(func(row, column int) {
-		pos := (row * 3) + column
+	foldersTable.SetSelectedFunc(func(row, _ int) {
+		pos := row
 		appState.SelectedFolder = folders[pos]
 		appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 	})
@@ -249,17 +249,17 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 	home.AddPage(mainPageName, main, true, true)
 	home.AddPage(newFolderPageName, newFolderFormLayout, true, false)
 
-	appState.Navigation.AddView(app.VIEW_NAMES.Home, home, true, func() {
+	refresh := func() error {
 		list, err := flashcardSetRepository.List(appState.Context, 0, 50)
 		if err != nil {
-			return
+			return err
 		}
 
 		recentlyStudied = list
 
 		folders, err = folderRepository.List(appState.Context, 0, 50)
 		if err != nil {
-			return
+			return err
 		}
 
 		recentSetsStudies.Clear()
@@ -271,9 +271,11 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		foldersTable.Clear()
 
 		for i, loadedFolder := range folders {
-			row := i / 3
-			column := i % 3
-			foldersTable.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
+			foldersTable.SetCell(i, 0, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
 		}
-	})
+
+		return nil
+	}
+
+	appState.Navigation.AddView(app.VIEW_NAMES.Home, home, true, refresh, nil)
 }

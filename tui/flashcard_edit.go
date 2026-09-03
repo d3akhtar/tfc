@@ -225,11 +225,6 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 				appState.SelectedFlashcardSet = selectedFlashcardSet
 			}
 
-			err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
-			if err != nil {
-				return
-			}
-
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
@@ -267,10 +262,7 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		AddButton("Save", func() {
 			question := questionInputTextArea.GetText()
 			answer := answerInputTextArea.GetText()
-			selectedFlashcardSet.Flashcards = append(selectedFlashcardSet.Flashcards, domain.Flashcard{
-				Question: question,
-				Answer:   answer,
-			})
+			selectedFlashcardSet.AddFlashcard(question, answer)
 
 			flashcardList.Clear()
 
@@ -377,7 +369,7 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 	flashcardEdit.AddPage("flashcard", newFlashcardInputFormModal, true, false)
 	flashcardEdit.AddPage("delete", confirmDeleteDialog, true, false)
 
-	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardEdit, flashcardEdit, false, func() {
+	refresh := func() error {
 		flashcardList.Clear()
 
 		if selectedFlashcardSet != appState.SelectedFlashcardSet {
@@ -406,5 +398,18 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 				false,
 			)
 		}
-	})
+
+		return nil
+	}
+
+	exit := func() error {
+		err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardEdit, flashcardEdit, false, refresh, exit)
 }

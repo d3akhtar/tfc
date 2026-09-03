@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/utils"
@@ -225,25 +226,31 @@ func (r *FlashcardSetRepository) GetQuizForFlashcardSet(ctx context.Context, ent
 			q.Id,
 			q.CurrentlySelectedIndex,
 			qf.IsUnknown,
-			qf.Position
+			qf.Position,
+			qf.FlashcardId
 		FROM Quizzes q 
 		JOIN QuizFlashcards qf ON qf.QuizId = q.Id
 		WHERE q.FlashcardSetId = $1
 		ORDER BY qf.Position ASC
 	`
 
-	quiz := domain.NewQuiz(entity.Id, entity.Flashcards)
-
 	rows, err := r.db.QueryContext(ctx, query, entity.Id)
+
+	var quizId int
+	var currentlySelectedIndex int
+	unknown := []int{}
+	flashcards := []domain.Flashcard{}
 
 	for rows.Next() {
 		isUnknown := false
 		pos := -1
+		flashcardId := 0
 		err := rows.Scan(
-			&quiz.Id,
-			&quiz.CurrentlySelectedIndex,
+			&quizId,
+			&currentlySelectedIndex,
 			&isUnknown,
 			&pos,
+			&flashcardId,
 		)
 
 		if err != nil {
@@ -251,13 +258,24 @@ func (r *FlashcardSetRepository) GetQuizForFlashcardSet(ctx context.Context, ent
 		}
 
 		if isUnknown {
-			quiz.Unknown.Add(pos)
+			unknown = append(unknown, pos)
 		}
+
+		idx := slices.IndexFunc(entity.Flashcards, func(fc domain.Flashcard) bool {
+			return fc.Id == flashcardId
+		})
+
+		flashcards = append(flashcards, entity.Flashcards[idx])
 	}
 
-	if quiz.Id == 0 {
-		return quiz, db.ErrNotFound
+	if quizId == 0 {
+		return nil, db.ErrNotFound
 	}
+
+	quiz := domain.NewQuiz(entity.Id, flashcards)
+	quiz.SetUnknownCardPositions(unknown)
+	quiz.Id = quizId
+	quiz.CurrentlySelectedIndex = currentlySelectedIndex
 
 	return quiz, err
 }
@@ -266,7 +284,7 @@ func (r *FlashcardSetRepository) List(ctx context.Context, offset int, limit int
 	query := `
 		SELECT fs.Id, fs.Name, fs.Description, fs.LastAccessed, fs.TrackProgress, fs.Front, fs.Shuffle, fs.ShuffleSeed, COUNT(fc.Id)
 		FROM FlashcardSets fs
-		LEFT JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
+		INNER JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
 		GROUP BY fs.Id
 		ORDER BY fs.Id ASC
 		LIMIT $1 OFFSET $2

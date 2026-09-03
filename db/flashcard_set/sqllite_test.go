@@ -11,7 +11,7 @@ import (
 	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/flashcard"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
-	"github.com/d3akhtar/tfc/db/utils/test"
+	test_utils "github.com/d3akhtar/tfc/db/utils/test"
 	"github.com/d3akhtar/tfc/domain"
 )
 
@@ -42,8 +42,11 @@ func testDB(t *testing.T, init bool) *sql.DB {
 
 				INSERT INTO Quizzes (FlashcardSetId) VALUES (1);
 
+				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 1, 0, 0);
 				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 2, 1, 1);
 				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 3, 2, 1);
+				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 4, 3, 0);
+				INSERT INTO QuizFlashcards (QuizId, FlashcardId, Position, IsUnknown) VALUES (1, 5, 4, 0);
 			`,
 		)
 
@@ -350,11 +353,13 @@ func TestFlashcardSetRepository_GetQuizForFlashcardSet(t *testing.T) {
 	database := testDB(t, true)
 	repo := flashcard_set.NewFlashcardSetRepository(database)
 
-	flashcardSet := &domain.FlashcardSet{Id: 1, Flashcards: []domain.Flashcard{}}
-	flashcardSet.AddFlashcard("q1", "a1")
-	flashcardSet.AddFlashcard("q2", "a2")
-	flashcardSet.AddFlashcard("q3", "a3")
-	flashcardSet.AddFlashcard("q4", "a4")
+	flashcardSet := &domain.FlashcardSet{Id: 1}
+	flashcards, err := repo.GetAllFlashcardsForSet(ctx, flashcardSet)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	flashcardSet.Flashcards = flashcards
 
 	quiz, err := repo.GetQuizForFlashcardSet(ctx, flashcardSet)
 	if err != nil {
@@ -395,6 +400,8 @@ func TestFlashcardSetRepository_List(t *testing.T) {
 			ShuffleSeed:   i + 20,
 		}
 
+		flashcardSet.AddFlashcard(fmt.Sprintf("name%d question", i), fmt.Sprintf("name%d answer", i))
+
 		err := repo.Create(ctx, flashcardSet)
 		if err != nil {
 			t.Fatalf("Unexpected error %v", err)
@@ -406,6 +413,10 @@ func TestFlashcardSetRepository_List(t *testing.T) {
 	actual, err := repo.List(ctx, 0, 10)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
+	}
+
+	if len(actual) != 10 {
+		t.Fatalf("len expected=%d, actual=%d", 10, len(actual))
 	}
 
 	slices.SortFunc(actual, func(a, b *domain.FlashcardSet) int {
@@ -424,12 +435,16 @@ func TestFlashcardSetRepository_List(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 
+	if len(actual) != 4 {
+		t.Fatalf("len expected=%d, actual=%d", 10, len(actual))
+	}
+
 	slices.SortFunc(actual, func(a, b *domain.FlashcardSet) int {
 		return a.Id - b.Id
 	})
 
-	for i := range 4 {
-		err = test_utils.TestCmpFlashcardSet(flashcardSets[i+2], actual[i])
+	for i, a := range actual {
+		err = test_utils.TestCmpFlashcardSet(flashcardSets[i+2], a)
 		if err != nil {
 			t.Errorf("(%d) %v", i, err)
 		}

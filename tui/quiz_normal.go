@@ -16,7 +16,9 @@ func InitQuizNormalUi(appState *app.State) {
 	currentFlashcardIndex := 0
 	showAnswer := false
 
-	quiz := tview.NewGrid().
+	quiz := tview.NewPages()
+
+	quizViewGrid := tview.NewGrid().
 		SetRows(44, -1)
 
 	contentView := tview.NewTextView().
@@ -99,11 +101,11 @@ func InitQuizNormalUi(appState *app.State) {
 		AddItem(nil, 5, 0, false).
 		AddItem(nextButton, 0, 1, false)
 
-	quiz.
+	quizViewGrid.
 		AddItem(contentViewContainer, 0, 0, 1, 1, 0, 0, true).
 		AddItem(controls, 1, 0, 1, 1, 0, 0, false)
 
-	appState.Navigation.AddView(app.VIEW_NAMES.QuizNormal, quiz, false, func() {
+	refresh := func() error {
 		if !slices.Equal(quizFlashcards, appState.SelectedFlashcardSet.GetFlashcards()) {
 			quizFlashcards = appState.SelectedFlashcardSet.GetFlashcards()
 			currentFlashcardIndex = 0
@@ -117,5 +119,11 @@ func InitQuizNormalUi(appState *app.State) {
 		}
 
 		contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", currentFlashcardIndex+1, len(quizFlashcards)))
-	})
+
+		return nil
+	}
+
+	quiz.AddPage("main", quizViewGrid, true, true)
+
+	appState.Navigation.AddView(app.VIEW_NAMES.QuizNormal, quiz, false, refresh, nil)
 }

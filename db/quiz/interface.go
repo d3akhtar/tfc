@@ -12,5 +12,5 @@ type QuizRepo interface {
 
 	GetFlashcardSetForQuiz(ctx context.Context, entity *domain.Quiz) (*domain.FlashcardSet, error)
 	GetUnknownFlashcardsForQuiz(ctx context.Context, entity *domain.Quiz) ([]domain.Flashcard, error)
-	CreateQuizForUnknownFlashcards(ctx context.Context, entity *domain.Quiz) error
+	ReplaceQuiz(ctx context.Context, entity *domain.Quiz) error
 }

@@ -147,12 +147,15 @@ func (r *FolderRepository) GetFlashcardSetsForFolder(ctx context.Context, entity
 			fs.TrackProgress,
 			fs.Front,
 			fs.Shuffle,
-			fs.ShuffleSeed
+			fs.ShuffleSeed,
+			COUNT(fc.Id)
 		FROM Folders f
 		INNER JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
 		INNER JOIN FlashcardSets fs ON fs.Id = ffs.FlashcardSetId
+		INNER JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
 		WHERE f.Id = $1
-		ORDER BY fs.Id Asc
+		GROUP BY fs.Id
+		ORDER BY fs.Id ASC
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, entity.Id)
@@ -174,6 +177,7 @@ func (r *FolderRepository) GetFlashcardSetsForFolder(ctx context.Context, entity
 			&fc.Front,
 			&fc.Shuffle,
 			&fc.ShuffleSeed,
+			&fc.FlashcardCount,
 		)
 
 		if err != nil {
@@ -240,6 +244,9 @@ func (r *FolderRepository) Update(ctx context.Context, entity *domain.Folder) er
 		}
 
 		err = utils.ExecStmtUpdate(stmt, ctx, entity.Name, entity.LastAccessed, entity.Id)
+		if err != nil {
+			return err
+		}
 
 		stmt.Close()
 
@@ -249,7 +256,7 @@ func (r *FolderRepository) Update(ctx context.Context, entity *domain.Folder) er
 		}
 
 		err = utils.ExecStmtUpdate(stmt, ctx, entity.Id)
-		if err != nil {
+		if err != nil && err != db.ErrNotFound {
 			return err
 		}
 

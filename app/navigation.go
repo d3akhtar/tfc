@@ -5,11 +5,10 @@ import "github.com/rivo/tview"
 type Navigation struct {
 	app *tview.Application
 
-	views   *tview.Pages
+	pages   *tview.Pages
 	history []string
 
-	refresh              map[string]func()
-	lastFocusedPrimitive map[string]tview.Primitive
+	views map[string]*View
 }
 
 func NewNavigation(app *tview.Application) *Navigation {
@@ -17,26 +16,32 @@ func NewNavigation(app *tview.Application) *Navigation {
 		app: app,
 
 		history: []string{},
-		views:   tview.NewPages(),
+		pages:   tview.NewPages(),
 
-		refresh:              make(map[string]func()),
-		lastFocusedPrimitive: make(map[string]tview.Primitive),
+		views: map[string]*View{},
 	}
 }
 
 func (n *Navigation) Views() *tview.Pages {
-	return n.views
+	return n.pages
 }
 
-func (n *Navigation) AddView(pageName string, primitive tview.Primitive, visible bool, refresh func()) {
-	n.views.AddPage(pageName, primitive, true, visible)
-	n.refresh[pageName] = refresh
-	n.lastFocusedPrimitive[pageName] = primitive
+func (n *Navigation) AddView(pageName string, page *tview.Pages, visible bool, refresh RefreshCallback, exit ExitCallback) {
+	view := NewView(pageName, page, refresh, exit, n.app)
+
+	n.pages.AddPage(pageName, view.page, true, visible)
+	n.views[pageName] = view
+
+	view.lastFocusedPrimitive = page
 }
 
 func (n *Navigation) GoToView(pageName string) {
 	n.hidePage(n.MostRecentlyVisitedViewName())
-	n.showPage(pageName)
+	if !n.showPage(pageName) {
+		n.showPage(n.MostRecentlyVisitedViewName())
+		return
+	}
+
 	n.history = append(n.history, pageName)
 }
 
@@ -45,7 +50,13 @@ func (n *Navigation) RevertView() {
 		return
 	}
 
-	n.views.HidePage(n.MostRecentlyVisitedViewName())
+	err := n.currentView().exit()
+	if err != nil {
+		n.currentView().Error(err)
+		return
+	}
+
+	n.pages.HidePage(n.MostRecentlyVisitedViewName())
 	n.history = n.history[:len(n.history)-1]
 	n.showPage(n.MostRecentlyVisitedViewName())
 }
@@ -58,13 +69,30 @@ func (n *Navigation) MostRecentlyVisitedViewName() string {
 	}
 }
 
-func (n *Navigation) showPage(pageName string) {
-	n.views.ShowPage(pageName)
-	n.app.SetFocus(n.lastFocusedPrimitive[pageName])
-	n.refresh[pageName]()
+func (n *Navigation) showPage(pageName string) bool {
+	err := n.views[pageName].Show()
+	if err != nil {
+		n.currentView().Error(err)
+		return false
+	}
+
+	n.pages.ShowPage(pageName)
+
+	return true
 }
 
-func (n *Navigation) hidePage(pageName string) {
-	n.lastFocusedPrimitive[pageName] = n.app.GetFocus()
-	n.views.HidePage(pageName)
+func (n *Navigation) hidePage(pageName string) bool {
+	err := n.views[pageName].Exit()
+	if err != nil {
+		n.currentView().Error(err)
+		return false
+	}
+
+	n.pages.HidePage(pageName)
+
+	return true
+}
+
+func (n *Navigation) currentView() *View {
+	return n.views[n.MostRecentlyVisitedViewName()]
 }

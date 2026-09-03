@@ -5,6 +5,9 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db"
+	"github.com/d3akhtar/tfc/db/flashcard_set"
+	"github.com/d3akhtar/tfc/db/quiz"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/d3akhtar/tfc/utils"
 	"github.com/gdamore/tcell/v2"
@@ -17,7 +20,7 @@ type flashcardPrimitiveInfo struct {
 	Answer   *tview.TextView
 }
 
-func InitFlashcardSetPreview(appState *app.State) {
+func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashcard_set.FlashcardSetRepo, quizRepository quiz.QuizRepo) {
 	var window *utils.SlidingWindow[domain.Flashcard]
 
 	maxFlashcardsShownInPreviewFlashcardList := 3
@@ -220,7 +223,8 @@ func InitFlashcardSetPreview(appState *app.State) {
 		SetLabel("Shuffle").
 		SetChangedFunc(func(checked bool) {
 			appState.SelectedFlashcardSet.SetShuffle(checked)
-			appState.SelectedFlashcardSet.Quiz = nil
+			appState.SelectedFlashcardSet.ResetQuizProgress()
+			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet.Quiz)
 
 			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
 
@@ -248,6 +252,7 @@ func InitFlashcardSetPreview(appState *app.State) {
 		AddFormItem(frontDropdown).
 		AddButton("Reset Progress", func() {
 			appState.SelectedFlashcardSet.ResetQuizProgress()
+			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet.Quiz)
 			flashcardSetPreview.HidePage("settings")
 			appState.SetFocus(settingsButton)
 		}).
@@ -339,7 +344,14 @@ func InitFlashcardSetPreview(appState *app.State) {
 		return event
 	})
 
-	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardSetPreview, flashcardSetPreview, false, func() {
+	refresh := func() error {
+		quiz, err := flashcardSetRepository.GetQuizForFlashcardSet(appState.Context, appState.SelectedFlashcardSet)
+		if err != nil && err != db.ErrNotFound {
+			return err
+		}
+
+		appState.SelectedFlashcardSet.Quiz = quiz
+
 		maxFlashcardsShownInPreviewFlashcardList = min(3, len(appState.SelectedFlashcardSet.Flashcards))
 
 		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
@@ -374,5 +386,9 @@ func InitFlashcardSetPreview(appState *app.State) {
 
 		shuffleCheckbox.SetChecked(appState.SelectedFlashcardSet.Shuffled())
 		frontDropdown.SetCurrentOption(int(appState.SelectedFlashcardSet.Front))
-	})
+
+		return nil
+	}
+
+	appState.Navigation.AddView(app.VIEW_NAMES.FlashcardSetPreview, flashcardSetPreview, false, refresh, nil)
 }
