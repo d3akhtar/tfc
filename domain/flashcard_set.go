@@ -108,7 +108,9 @@ func (f *FlashcardSet) AddFlashcard(question, answer string) {
 }
 
 func (f *FlashcardSet) ResetQuizProgress() {
+	lastQuizId := f.Quiz.Id
 	f.Quiz = NewQuiz(f.Id, f.GetFlashcards())
+	f.Quiz.Id = lastQuizId
 }
 
 func (f *FlashcardSet) count() int {

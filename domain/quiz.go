@@ -1,21 +1,21 @@
 package domain
 
+import "github.com/d3akhtar/tfc/utils"
+
 type Quiz struct {
 	Id                     int
 	FlashcardSetId         int
 	Flashcards             []Flashcard
 	CurrentlySelectedIndex int
 
-	Unknown []int
-
-	nKnown, nUnknown int
+	Unknown utils.HashSet[int]
 }
 
 func NewQuiz(flashcardSetId int, flashcards []Flashcard) *Quiz {
 	return &Quiz{
 		FlashcardSetId: flashcardSetId,
 		Flashcards:     flashcards,
-		Unknown:        make([]int, 0, len(flashcards)),
+		Unknown:        utils.NewHashSet[int](),
 	}
 }
 
@@ -26,14 +26,12 @@ func NewQuizFromOldQuiz(quiz *Quiz) *Quiz {
 		Id:             quiz.Id,
 		FlashcardSetId: quiz.FlashcardSetId,
 		Flashcards:     flashcards,
-		Unknown:        make([]int, 0, len(flashcards)),
+		Unknown:        utils.NewHashSet[int](),
 	}
 }
 
 func (q *Quiz) SetUnknownCardPositions(unknown []int) {
-	q.Unknown = unknown
-	q.nUnknown = len(unknown)
-	q.nKnown = q.CurrentlySelectedIndex - q.nUnknown
+	q.Unknown = utils.NewHashSetWithItems(unknown)
 }
 
 func (q *Quiz) AreCardsLeft() bool {
@@ -49,9 +47,7 @@ func (q *Quiz) CanUndo() bool {
 }
 
 func (q *Quiz) GoToNextCard(currentCardKnown bool) {
-	if currentCardKnown {
-		q.nKnown++
-	} else {
+	if !currentCardKnown {
 		q.markCurrentlySelectedCardAsUnknown()
 	}
 
@@ -59,13 +55,7 @@ func (q *Quiz) GoToNextCard(currentCardKnown bool) {
 }
 
 func (q *Quiz) Undo() Flashcard {
-	if len(q.Unknown) > 0 && q.Unknown[len(q.Unknown)-1] == q.CurrentlySelectedIndex-1 {
-		q.nUnknown--
-		q.Unknown = q.Unknown[:len(q.Unknown)-1]
-	} else {
-		q.nKnown--
-	}
-
+	q.Unknown.Remove(q.CurrentlySelectedIndex - 1)
 	q.CurrentlySelectedIndex--
 	return q.CurrentlySelectedCard()
 }
@@ -75,12 +65,14 @@ func (q *Quiz) CurrentlySelectedCard() Flashcard {
 }
 
 func (q *Quiz) GetKnownAndUnknownCount() (int, int) {
-	return q.nKnown, q.nUnknown
+	nUnknown := q.Unknown.Length()
+	nKnown := q.CurrentlySelectedIndex - nUnknown
+	return nKnown, nUnknown
 }
 
 func (q *Quiz) GetUnknownFlashcards() []Flashcard {
 	flashcards := make([]Flashcard, 0, len(q.Flashcards))
-	for _, i := range q.Unknown {
+	for i := range q.Unknown.Items() {
 		flashcards = append(flashcards, q.Flashcards[i])
 	}
 
@@ -88,6 +80,5 @@ func (q *Quiz) GetUnknownFlashcards() []Flashcard {
 }
 
 func (q *Quiz) markCurrentlySelectedCardAsUnknown() {
-	q.nUnknown++
-	q.Unknown = append(q.Unknown, q.CurrentlySelectedIndex)
+	q.Unknown.Add(q.CurrentlySelectedIndex)
 }

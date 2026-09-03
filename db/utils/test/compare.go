@@ -25,8 +25,19 @@ func TestCmpQuiz(expected, actual *domain.Quiz) error {
 		return fmt.Errorf("quiz CurrentlySelectedIndex expected=%v, got=%v", expected.CurrentlySelectedIndex, actual.CurrentlySelectedIndex)
 	}
 
-	if !slices.Equal(expected.Unknown, actual.Unknown) {
-		return fmt.Errorf("quiz.Unknown expected=%v, got=%v", expected.Unknown, actual.Unknown)
+	if expected.Unknown.Length() != actual.Unknown.Length() {
+		return fmt.Errorf("quiz.Unknown.Length() expected=%v, got=%v", expected.Unknown.Length(), actual.Unknown.Length())
+	}
+
+	nonMatching := make([]int, 0, expected.Unknown.Length())
+	for u := range expected.Unknown.Items() {
+		if !actual.Unknown.Contains(u) {
+			nonMatching = append(nonMatching, u)
+		}
+	}
+
+	if len(nonMatching) != 0 {
+		return fmt.Errorf("quiz.Unknown unmatched values %v", nonMatching)
 	}
 
 	return nil

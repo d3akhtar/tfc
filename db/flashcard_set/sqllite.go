@@ -224,34 +224,40 @@ func (r *FlashcardSetRepository) GetQuizForFlashcardSet(ctx context.Context, ent
 		SELECT
 			q.Id,
 			q.CurrentlySelectedIndex,
-			quf.Position
-		FROM FlashcardSets fs
-		JOIN Quizzes q ON q.FlashcardSetId = fs.Id
-		JOIN QuizzesUnknownFlashcard quf ON quf.QuizId = q.Id
-		WHERE fs.Id = $1
+			qf.IsUnknown,
+			qf.Position
+		FROM Quizzes q 
+		JOIN QuizFlashcards qf ON qf.QuizId = q.Id
+		WHERE q.FlashcardSetId = $1
+		ORDER BY qf.Position ASC
 	`
 
 	quiz := domain.NewQuiz(entity.Id, entity.Flashcards)
 
-	unknown := []int{}
 	rows, err := r.db.QueryContext(ctx, query, entity.Id)
 
 	for rows.Next() {
-		var u int
+		isUnknown := false
+		pos := -1
 		err := rows.Scan(
 			&quiz.Id,
 			&quiz.CurrentlySelectedIndex,
-			&u,
+			&isUnknown,
+			&pos,
 		)
 
 		if err != nil {
 			return nil, err
 		}
 
-		unknown = append(unknown, u)
+		if isUnknown {
+			quiz.Unknown.Add(pos)
+		}
 	}
 
-	quiz.Unknown = unknown
+	if quiz.Id == 0 {
+		return quiz, db.ErrNotFound
+	}
 
 	return quiz, err
 }

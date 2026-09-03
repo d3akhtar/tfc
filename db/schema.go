@@ -51,10 +51,11 @@ const schema = `
 		FOREIGN KEY(FlashcardSetId) REFERENCES FlashcardSets(Id) ON DELETE CASCADE
 	);
 
-	CREATE TABLE IF NOT EXISTS QuizzesUnknownFlashcard (
+	CREATE TABLE IF NOT EXISTS QuizFlashcards (
 		QuizId INTEGER NOT NULL,
 		FlashcardId INTEGER NOT NULL,
 		Position INTEGER NOT NULL,
+		IsUnknown INTEGER NOT NULL DEFAULT 0 CHECK (IsUnknown IN (0, 1)),
 
 		PRIMARY KEY (QuizId, FlashcardId, Position),
 

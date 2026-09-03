@@ -128,9 +128,10 @@ func TestQuizRepository_Create(t *testing.T) {
 	quiz := &domain.Quiz{
 		FlashcardSetId:         flashcardSet.Id,
 		Flashcards:             flashcards,
-		Unknown:                []int{1, 2},
 		CurrentlySelectedIndex: 3,
 	}
+
+	quiz.SetUnknownCardPositions([]int{1, 2})
 
 	err = repo.Create(ctx, quiz)
 	if err != nil {
@@ -236,9 +237,10 @@ func TestQuizRepository_GetById(t *testing.T) {
 	quiz := &domain.Quiz{
 		FlashcardSetId:         flashcardSet.Id,
 		Flashcards:             flashcards,
-		Unknown:                []int{1, 2},
 		CurrentlySelectedIndex: 3,
 	}
+
+	quiz.SetUnknownCardPositions([]int{1, 2})
 
 	err = repo.Create(ctx, quiz)
 	if err != nil {
@@ -294,9 +296,10 @@ func TestQuizRepository_GetFlashcardSetForQuiz(t *testing.T) {
 	quiz := &domain.Quiz{
 		FlashcardSetId:         flashcardSet.Id,
 		Flashcards:             flashcards,
-		Unknown:                []int{1, 2},
 		CurrentlySelectedIndex: 3,
 	}
+
+	quiz.SetUnknownCardPositions([]int{1, 2})
 
 	err = repo.Create(ctx, quiz)
 	if err != nil {
@@ -354,9 +357,10 @@ func TestQuizRepository_GetUnknownFlashcardsForQuiz(t *testing.T) {
 	quiz := &domain.Quiz{
 		FlashcardSetId:         flashcardSet.Id,
 		Flashcards:             flashcards,
-		Unknown:                []int{1, 2},
 		CurrentlySelectedIndex: 3,
 	}
+
+	quiz.SetUnknownCardPositions([]int{1, 2})
 
 	err = repo.Create(ctx, quiz)
 	if err != nil {
@@ -477,9 +481,10 @@ func TestQuizRepository_Update(t *testing.T) {
 	quiz := &domain.Quiz{
 		FlashcardSetId:         flashcardSet.Id,
 		Flashcards:             flashcards,
-		Unknown:                []int{1, 2},
 		CurrentlySelectedIndex: 3,
 	}
+
+	quiz.SetUnknownCardPositions([]int{1, 2})
 
 	err = repo.Create(ctx, quiz)
 	if err != nil {
@@ -487,7 +492,7 @@ func TestQuizRepository_Update(t *testing.T) {
 	}
 
 	quiz.CurrentlySelectedIndex = 6
-	quiz.Unknown = append(quiz.Unknown, 4)
+	quiz.Unknown.Add(4)
 
 	err = repo.Update(ctx, quiz)
 	if err != nil {
@@ -504,6 +509,75 @@ func TestQuizRepository_Update(t *testing.T) {
 	for i, flashcard := range expected {
 		if got[i] != flashcard {
 			t.Errorf("(%d) expected=%#v, got=%#v", i, flashcard, got[i])
+		}
+	}
+}
+
+func TestQuizRepository_CreateQuizForUnknownFlashcards(t *testing.T) {
+	ctx := context.Background()
+	database := testDB(t)
+	repo := quiz.NewQuizRepository(database)
+	flashcardSetRepo := flashcard_set.NewFlashcardSetRepository(database)
+
+	flashcards := []domain.Flashcard{}
+
+	for i := range 10 {
+		flashcard := domain.Flashcard{
+			Question:       fmt.Sprintf("q%d", i),
+			Answer:         fmt.Sprintf("a%d", i),
+			FlashcardSetId: 1,
+			Position:       i,
+		}
+
+		flashcards = append(flashcards, flashcard)
+	}
+
+	flashcardSet := &domain.FlashcardSet{
+		Name:          "set 1",
+		Description:   "desc 1",
+		LastAccessed:  time.Now(),
+		TrackProgress: false,
+		Front:         domain.FlashcardFront(domain.Question),
+		Flashcards:    flashcards,
+		Shuffle:       false,
+		ShuffleSeed:   0,
+	}
+
+	err := flashcardSetRepo.Create(ctx, flashcardSet)
+	if err != nil {
+		t.Fatalf("Unexpected test setup error %v", err)
+	}
+
+	quiz := &domain.Quiz{
+		FlashcardSetId:         flashcardSet.Id,
+		Flashcards:             flashcards,
+		CurrentlySelectedIndex: 3,
+	}
+
+	quiz.SetUnknownCardPositions([]int{1, 2})
+
+	err = repo.Create(ctx, quiz)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	oldUnknownFlashcards, err := repo.GetUnknownFlashcardsForQuiz(ctx, quiz)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	quiz = domain.NewQuizFromOldQuiz(quiz)
+
+	err = repo.CreateQuizForUnknownFlashcards(ctx, quiz)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	expected := quiz.Flashcards
+
+	for i, flashcard := range expected {
+		if oldUnknownFlashcards[i] != flashcard {
+			t.Errorf("(%d) expected=%#v, got=%#v", i, flashcard, oldUnknownFlashcards[i])
 		}
 	}
 }
