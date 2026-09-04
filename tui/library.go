@@ -37,7 +37,7 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 			pos := row
 			selectedFolder := filteredFolderList[pos]
 			selectedFolder.LastAccessed = time.Now()
-			appState.SelectedFolder = selectedFolder
+			appState.SetSelectedFolder(selectedFolder)
 			appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 		})
 
@@ -46,14 +46,14 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 			pos := row
 			selectedFlashcardSet := filteredFlashcardSetList[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
-			appState.SelectedFlashcardSet = selectedFlashcardSet
+			appState.SetSelectedFlashcardSet(selectedFlashcardSet)
 
-			flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet)
+			flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet())
 			if err != nil {
 				return
 			}
 
-			appState.SelectedFlashcardSet.Flashcards = flashcards
+			appState.SelectedFlashcardSet().Flashcards = flashcards
 
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})

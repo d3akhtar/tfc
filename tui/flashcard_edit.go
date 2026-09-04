@@ -216,13 +216,13 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 	finishButton := NewButton("Finish").
 		SetSelectedFunc(func() {
-			if appState.SelectedFlashcardSet == nil {
+			if appState.SelectedFlashcardSet() == nil {
 				err := flashcardSetRepository.Create(appState.Context, selectedFlashcardSet)
 				if err != nil {
 					return
 				}
 
-				appState.SelectedFlashcardSet = selectedFlashcardSet
+				appState.SetSelectedFlashcardSet(selectedFlashcardSet)
 			}
 
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
@@ -372,8 +372,8 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 	refresh := func() error {
 		flashcardList.Clear()
 
-		if selectedFlashcardSet != appState.SelectedFlashcardSet {
-			selectedFlashcardSet = appState.SelectedFlashcardSet
+		if selectedFlashcardSet != appState.SelectedFlashcardSet() {
+			selectedFlashcardSet = appState.SelectedFlashcardSet()
 		}
 
 		if selectedFlashcardSet == nil {

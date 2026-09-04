@@ -22,13 +22,14 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			appState.SelectedFlashcardSet = recentlyStudied[pos]
-			setFlashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet)
+			appState.SetSelectedFlashcardSet(recentlyStudied[pos])
+
+			setFlashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet())
 			if err != nil {
 				return
 			}
 
-			appState.SelectedFlashcardSet.Flashcards = setFlashcards
+			appState.SelectedFlashcardSet().Flashcards = setFlashcards
 
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
@@ -56,7 +57,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 
 	foldersTable.SetSelectedFunc(func(row, _ int) {
 		pos := row
-		appState.SelectedFolder = folders[pos]
+		appState.SetSelectedFolder(folders[pos])
 		appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 	})
 
@@ -132,7 +133,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 	newFolderFormLayout := NewModal(newFolderForm, 100, 7)
 
 	createFlashcardSetButton.SetSelectedFunc(func() {
-		appState.SelectedFlashcardSet = nil
+		appState.SetSelectedFlashcardSet(nil)
 		appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
 	})
 

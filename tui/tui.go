@@ -41,14 +41,22 @@ func SetDefaults() {
 
 func Init(appState *app.State, db *sql.DB) {
 	flashcardSetRepository := flashcard_set.NewFlashcardSetRepository(db)
-	folderRepositry := folder.NewFolderRepository(db)
+	folderRepository := folder.NewFolderRepository(db)
 	quizRepository := quiz.NewQuizRepository(db)
 
-	InitHomeUi(appState, flashcardSetRepository, folderRepositry)
-	InitLibraryUi(appState, flashcardSetRepository, folderRepositry)
+	appState.AddCallbackForSelectedFlashcardSetChange(func(fs *domain.FlashcardSet) {
+		flashcardSetRepository.Update(appState.Context, fs)
+	})
+
+	appState.AddCallbackForSelectedFolderChange(func(f *domain.Folder) {
+		folderRepository.Update(appState.Context, f)
+	})
+
+	InitHomeUi(appState, flashcardSetRepository, folderRepository)
+	InitLibraryUi(appState, flashcardSetRepository, folderRepository)
 	InitFlashcardEditUi(appState, flashcardSetRepository)
 	InitFlashcardSetPreview(appState, flashcardSetRepository, quizRepository)
-	InitFolderUi(appState, folderRepositry, flashcardSetRepository)
+	InitFolderUi(appState, folderRepository, flashcardSetRepository)
 	InitQuizNormalUi(appState)
 	InitQuizProgressTrackUi(appState, quizRepository)
 }
