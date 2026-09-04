@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -191,7 +192,11 @@ func TestFolderRepository_FilterFlashcardSetsInFolder(t *testing.T) {
 		t.Fatalf("Unexpected error %v", err)
 	}
 
-	gotFolderFlashcardSets, err := repo.FilterFlashcardSetsInFolder(ctx, folder, "name", 10, 0)
+	slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
+		return a.LastAccessed.Compare(b.LastAccessed)
+	})
+
+	gotFolderFlashcardSets, err := repo.FilterFlashcardSetsInFolder(ctx, folder, "name", 10, 0, db.Recent)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -203,7 +208,27 @@ func TestFolderRepository_FilterFlashcardSetsInFolder(t *testing.T) {
 		}
 	}
 
-	gotFolderFlashcardSets, err = repo.FilterFlashcardSetsInFolder(ctx, folder, "name0", 1, 0)
+	slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	gotFolderFlashcardSets, err = repo.FilterFlashcardSetsInFolder(ctx, folder, "name", 10, 0, db.Alphabetical)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	for i, got := range gotFolderFlashcardSets {
+		err = test_utils.TestCmpFlashcardSet(&flashcardSets[i], got)
+		if err != nil {
+			t.Errorf("(%d) %v", i, err)
+		}
+	}
+
+	slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	gotFolderFlashcardSets, err = repo.FilterFlashcardSetsInFolder(ctx, folder, "name0", 1, 0, db.Alphabetical)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -217,7 +242,7 @@ func TestFolderRepository_FilterFlashcardSetsInFolder(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	gotFolderFlashcardSets, err = repo.FilterFlashcardSetsInFolder(ctx, folder, "name", 5, 4)
+	gotFolderFlashcardSets, err = repo.FilterFlashcardSetsInFolder(ctx, folder, "name", 5, 4, db.Alphabetical)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -528,7 +553,11 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 		folders = append(folders, folder)
 	}
 
-	got, err := repo.FilterFolders(ctx, "folder", 0, 10)
+	slices.SortFunc(folders, func(a, b *domain.Folder) int {
+		return a.LastAccessed.Compare(b.LastAccessed)
+	})
+
+	got, err := repo.FilterFolders(ctx, "folder", 0, 10, db.Recent)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -544,7 +573,27 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 		}
 	}
 
-	got, err = repo.FilterFolders(ctx, "folder", 5, 3)
+	slices.SortFunc(folders, func(a, b *domain.Folder) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	got, err = repo.FilterFolders(ctx, "folder", 0, 10, db.Alphabetical)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	for i, a := range got {
+		err := test_utils.TestCmpFolder(folders[i], a)
+		if err != nil {
+			t.Errorf("(%d) %v", i, err)
+		}
+
+		if a.FlashcardSetCount != len(folders[i].FlashcardSets) {
+			t.Errorf("flashcard count expected=%d, got=%d", len(folders[i].FlashcardSets), a.FlashcardSetCount)
+		}
+	}
+
+	got, err = repo.FilterFolders(ctx, "folder", 5, 3, db.Alphabetical)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -561,7 +610,7 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 		}
 	}
 
-	got, err = repo.FilterFolders(ctx, "folder0", 10, 0)
+	got, err = repo.FilterFolders(ctx, "folder0", 10, 0, db.Alphabetical)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -573,5 +622,67 @@ func TestFolderRepository_FilterFolders(t *testing.T) {
 	err = test_utils.TestCmpFolder(folders[0], got[0])
 	if err != nil {
 		t.Errorf("%v", err)
+	}
+}
+
+func TestFolderRepository_ListRecentlyAccessedFolders(t *testing.T) {
+	ctx := context.Background()
+	database := testDB(t)
+	repo := folder.NewFolderRepository(database)
+	flashcardSetRepo := flashcard_set.NewFlashcardSetRepository(database)
+
+	folders := []*domain.Folder{}
+	flashcardSets := []domain.FlashcardSet{}
+	for i := range 10 {
+		flashcardSet := domain.FlashcardSet{
+			Id:            i,
+			Name:          fmt.Sprintf("name%d", i),
+			Description:   fmt.Sprintf("desc%d", i),
+			LastAccessed:  time.Now(),
+			TrackProgress: i%2 == 0,
+			Front:         domain.FlashcardFront((i + 1) % 2),
+			Shuffle:       i%2 == 0,
+			ShuffleSeed:   i + 20,
+		}
+
+		err := flashcardSetRepo.Create(ctx, &flashcardSet)
+		if err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
+
+		flashcardSets = append(flashcardSets, flashcardSet)
+
+		folder := &domain.Folder{
+			Name:          fmt.Sprintf("folder%d", i),
+			LastAccessed:  time.Now(),
+			FlashcardSets: slices.Clone(flashcardSets),
+		}
+
+		err = repo.Create(ctx, folder)
+		if err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
+
+		folders = append(folders, folder)
+	}
+
+	slices.SortFunc(folders, func(a, b *domain.Folder) int {
+		return a.LastAccessed.Compare(b.LastAccessed)
+	})
+
+	got, err := repo.ListRecentlyAccessedFolders(ctx)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	for i, a := range got {
+		err := test_utils.TestCmpFolder(folders[i], a)
+		if err != nil {
+			t.Errorf("(%d) %v", i, err)
+		}
+
+		if a.FlashcardSetCount != len(folders[i].FlashcardSets) {
+			t.Errorf("flashcard count expected=%d, got=%d", len(folders[i].FlashcardSets), a.FlashcardSetCount)
+		}
 	}
 }

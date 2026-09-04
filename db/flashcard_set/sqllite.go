@@ -99,15 +99,23 @@ func (r *FlashcardSetRepository) Delete(ctx context.Context, id int) error {
 	return utils.DeleteQuery(r.db, ctx, "FlashcardSets", id)
 }
 
-func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter string, limit, offset int) ([]domain.FlashcardSet, error) {
+func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter string, limit, offset int, sort db.FilterSortCriteria) ([]domain.FlashcardSet, error) {
+	order := ""
+	switch sort {
+	case db.Recent:
+		order = "LastAccessed"
+	case db.Alphabetical:
+		order = "Name"
+	}
+
 	query := fmt.Sprintf(`
 		SELECT Id, Name, Description, LastAccessed, TrackProgress, Front, Shuffle, ShuffleSeed
 		FROM FlashcardSets
 		WHERE Name LIKE '%%%s%%'
-		ORDER BY Id ASC
+		ORDER BY %s ASC
 		LIMIT $1 OFFSET $2
 		`,
-		filter,
+		filter, order,
 	)
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -396,4 +404,50 @@ func (r *FlashcardSetRepository) Update(ctx context.Context, entity *domain.Flas
 
 		return nil
 	})
+}
+
+func (r *FlashcardSetRepository) ListRecentlyAccessedFlashcardSets(ctx context.Context) ([]*domain.FlashcardSet, error) {
+	query := `
+		SELECT fs.Id, fs.Name, fs.Description, fs.LastAccessed, fs.TrackProgress, fs.Front, fs.Shuffle, fs.ShuffleSeed, COUNT(fc.Id)
+		FROM FlashcardSets fs
+		INNER JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
+		GROUP BY fs.Id
+		ORDER BY fs.LastAccessed ASC
+		LIMIT 30
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	flashcardSets := []*domain.FlashcardSet{}
+	for rows.Next() {
+		fs := &domain.FlashcardSet{}
+		err := rows.Scan(
+			&fs.Id,
+			&fs.Name,
+			&fs.Description,
+			&fs.LastAccessed,
+			&fs.TrackProgress,
+			&fs.Front,
+			&fs.Shuffle,
+			&fs.ShuffleSeed,
+			&fs.FlashcardCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		flashcardSets = append(flashcardSets, fs)
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, db.ErrNotFound
+	}
+
+	return flashcardSets, err
 }

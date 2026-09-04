@@ -57,7 +57,15 @@ func (r *FolderRepository) Delete(ctx context.Context, id int) error {
 	return utils.DeleteQuery(r.db, ctx, "Folders", id)
 }
 
-func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, entity *domain.Folder, filter string, limit, offset int) ([]*domain.FlashcardSet, error) {
+func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, entity *domain.Folder, filter string, limit, offset int, sort db.FilterSortCriteria) ([]*domain.FlashcardSet, error) {
+	order := ""
+	switch sort {
+	case db.Recent:
+		order = "fs.LastAccessed"
+	case db.Alphabetical:
+		order = "fs.Name"
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			fs.Id,
@@ -73,9 +81,9 @@ func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, enti
 		INNER JOIN FlashcardSets fs ON fs.Id = ffs.FlashcardSetId
 		WHERE f.Id = $1
 		AND fs.Name LIKE '%%%s%%'
-		ORDER BY fs.Id ASC
+		ORDER BY %s ASC
 		LIMIT $2 OFFSET $3`,
-		filter,
+		filter, order,
 	)
 
 	rows, err := r.db.QueryContext(ctx, query, entity.Id, limit, offset)
@@ -289,7 +297,15 @@ func (r *FolderRepository) Update(ctx context.Context, entity *domain.Folder) er
 	})
 }
 
-func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, limit, offset int) ([]*domain.Folder, error) {
+func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, limit, offset int, sort db.FilterSortCriteria) ([]*domain.Folder, error) {
+	order := ""
+	switch sort {
+	case db.Recent:
+		order = "f.LastAccessed"
+	case db.Alphabetical:
+		order = "f.Name"
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			f.Id,
@@ -300,9 +316,9 @@ func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, lim
 		JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
 		WHERE f.Name LIKE '%%%s%%'
 		GROUP BY f.Id
-		ORDER BY f.Id ASC
+		ORDER BY %s ASC
 		LIMIT $1 OFFSET $2`,
-		filter,
+		filter, order,
 	)
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -364,4 +380,41 @@ func (r *FolderRepository) addFlashcardSetsToFolder(ctx context.Context, entity 
 
 		return nil
 	})
+}
+
+func (r *FolderRepository) ListRecentlyAccessedFolders(ctx context.Context) ([]*domain.Folder, error) {
+	query := `
+		SELECT f.Id, f.Name, f.LastAccessed, COUNT(ffs.FlashcardSetId)
+		FROM Folders f
+		LEFT JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
+		GROUP BY f.Id
+		ORDER BY f.LastAccessed ASC
+		LIMIT 30
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	folders := []*domain.Folder{}
+	for rows.Next() {
+		folder := &domain.Folder{}
+		err := rows.Scan(
+			&folder.Id,
+			&folder.Name,
+			&folder.LastAccessed,
+			&folder.FlashcardSetCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		folders = append(folders, folder)
+	}
+
+	return folders, nil
 }
