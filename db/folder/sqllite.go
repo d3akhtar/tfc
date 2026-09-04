@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/utils"
@@ -57,7 +58,15 @@ func (r *FolderRepository) Delete(ctx context.Context, id int) error {
 	return utils.DeleteQuery(r.db, ctx, "Folders", id)
 }
 
-func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, entity *domain.Folder, filter string, limit, offset int) ([]*domain.FlashcardSet, error) {
+func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, entity *domain.Folder, filter string, limit, offset int, sort db.FilterSortCriteria) ([]*domain.FlashcardSet, error) {
+	order := ""
+	switch sort {
+	case db.Recent:
+		order = "fs.LastAccessed"
+	case db.Alphabetical:
+		order = "fs.Name"
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			fs.Id,
@@ -67,15 +76,18 @@ func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, enti
 			fs.TrackProgress,
 			fs.Front,
 			fs.Shuffle,
-			fs.ShuffleSeed
+			fs.ShuffleSeed,
+			COUNT(fc.Id)
 		FROM Folders f
 		INNER JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
 		INNER JOIN FlashcardSets fs ON fs.Id = ffs.FlashcardSetId
+		LEFT JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
 		WHERE f.Id = $1
 		AND fs.Name LIKE '%%%s%%'
-		ORDER BY fs.Id ASC
+		GROUP BY fs.Id
+		ORDER BY %s ASC
 		LIMIT $2 OFFSET $3`,
-		filter,
+		filter, order,
 	)
 
 	rows, err := r.db.QueryContext(ctx, query, entity.Id, limit, offset)
@@ -97,6 +109,7 @@ func (r *FolderRepository) FilterFlashcardSetsInFolder(ctx context.Context, enti
 			&fs.Front,
 			&fs.Shuffle,
 			&fs.ShuffleSeed,
+			&fs.FlashcardCount,
 		)
 
 		if err != nil {
@@ -289,7 +302,15 @@ func (r *FolderRepository) Update(ctx context.Context, entity *domain.Folder) er
 	})
 }
 
-func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, limit, offset int) ([]*domain.Folder, error) {
+func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, limit, offset int, sort db.FilterSortCriteria) ([]*domain.Folder, error) {
+	order := ""
+	switch sort {
+	case db.Recent:
+		order = "f.LastAccessed"
+	case db.Alphabetical:
+		order = "f.Name"
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			f.Id,
@@ -297,12 +318,13 @@ func (r *FolderRepository) FilterFolders(ctx context.Context, filter string, lim
 			f.LastAccessed,
 			COUNT(ffs.FlashcardSetId)
 		FROM Folders f
-		JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
+		LEFT JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
 		WHERE f.Name LIKE '%%%s%%'
 		GROUP BY f.Id
-		ORDER BY f.Id ASC
-		LIMIT $1 OFFSET $2`,
-		filter,
+		ORDER BY %s ASC
+		LIMIT $1 OFFSET $2
+		`,
+		filter, order,
 	)
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -364,4 +386,46 @@ func (r *FolderRepository) addFlashcardSetsToFolder(ctx context.Context, entity 
 
 		return nil
 	})
+}
+
+func (r *FolderRepository) ListRecentlyAccessedFolders(ctx context.Context) ([]*domain.Folder, error) {
+	query := `
+		SELECT f.Id, f.Name, f.LastAccessed, COUNT(ffs.FlashcardSetId)
+		FROM Folders f
+		LEFT JOIN FolderFlashcardSet ffs ON ffs.FolderId = f.Id
+		GROUP BY f.Id
+		ORDER BY f.LastAccessed ASC
+		LIMIT 30
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	folders := []*domain.Folder{}
+	for rows.Next() {
+		folder := &domain.Folder{}
+		err := rows.Scan(
+			&folder.Id,
+			&folder.Name,
+			&folder.LastAccessed,
+			&folder.FlashcardSetCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		folders = append(folders, folder)
+	}
+
+	return folders, nil
+}
+
+func (r *FolderRepository) UpdateLastAccessedTime(ctx context.Context, entity *domain.Folder) error {
+	query := `UPDATE Folders SET LastAccessed = $1 WHERE Id = $2`
+	return utils.ExecQueryUpdate(query, r.db, ctx, time.Now(), entity.Id)
 }

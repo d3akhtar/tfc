@@ -176,10 +176,10 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 
 	trackProgressButton.
 		SetSelectedFunc(func() {
-			appState.SelectedFlashcardSet.TrackProgress = !appState.SelectedFlashcardSet.TrackProgress
+			appState.SelectedFlashcardSet().TrackProgress = !appState.SelectedFlashcardSet().TrackProgress
 			var col tcell.Color
 			var trackProgressButtonTextPrefix string
-			if appState.SelectedFlashcardSet.TrackProgress {
+			if appState.SelectedFlashcardSet().TrackProgress {
 				col = tcell.ColorGreen
 				trackProgressButtonTextPrefix = "✔"
 			} else {
@@ -195,7 +195,7 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 
 	studyButton := NewButton("Study").
 		SetSelectedFunc(func() {
-			if appState.SelectedFlashcardSet.TrackProgress {
+			if appState.SelectedFlashcardSet().TrackProgress {
 				appState.Navigation.GoToView(app.VIEW_NAMES.QuizProgressTrack)
 			} else {
 				appState.Navigation.GoToView(app.VIEW_NAMES.QuizNormal)
@@ -222,11 +222,11 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 	shuffleCheckbox := tview.NewCheckbox().
 		SetLabel("Shuffle").
 		SetChangedFunc(func(checked bool) {
-			appState.SelectedFlashcardSet.SetShuffle(checked)
-			appState.SelectedFlashcardSet.ResetQuizProgress()
-			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet.Quiz)
+			appState.SelectedFlashcardSet().SetShuffle(checked)
+			appState.SelectedFlashcardSet().ResetQuizProgress()
+			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet().Quiz)
 
-			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
+			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet().GetFlashcards())
 
 			for i := window.Start; i <= window.End; i++ {
 				activeFlashcardPrimitives[i].Layout.
@@ -243,7 +243,7 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 	frontDropdown := tview.NewDropDown().
 		SetLabel("Front").
 		SetOptions([]string{"Question", "Answer"}, func(_ string, option int) {
-			appState.SelectedFlashcardSet.Front = domain.FlashcardFront(option)
+			appState.SelectedFlashcardSet().Front = domain.FlashcardFront(option)
 		})
 
 	settings := tview.NewForm().
@@ -251,8 +251,8 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 		AddFormItem(shuffleCheckbox).
 		AddFormItem(frontDropdown).
 		AddButton("Reset Progress", func() {
-			appState.SelectedFlashcardSet.ResetQuizProgress()
-			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet.Quiz)
+			appState.SelectedFlashcardSet().ResetQuizProgress()
+			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet().Quiz)
 			flashcardSetPreview.HidePage("settings")
 			appState.SetFocus(settingsButton)
 		}).
@@ -345,20 +345,20 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 	})
 
 	refresh := func() error {
-		quiz, err := flashcardSetRepository.GetQuizForFlashcardSet(appState.Context, appState.SelectedFlashcardSet)
+		quiz, err := flashcardSetRepository.GetQuizForFlashcardSet(appState.Context, appState.SelectedFlashcardSet())
 		if err != nil && err != db.ErrNotFound {
 			return err
 		}
 
-		appState.SelectedFlashcardSet.Quiz = quiz
+		appState.SelectedFlashcardSet().Quiz = quiz
 
-		maxFlashcardsShownInPreviewFlashcardList = min(3, len(appState.SelectedFlashcardSet.Flashcards))
+		maxFlashcardsShownInPreviewFlashcardList = min(3, len(appState.SelectedFlashcardSet().Flashcards))
 
-		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet.GetFlashcards())
+		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet().GetFlashcards())
 
 		var col tcell.Color
 		var trackProgressButtonTextPrefix string
-		if appState.SelectedFlashcardSet.TrackProgress {
+		if appState.SelectedFlashcardSet().TrackProgress {
 			col = tcell.ColorGreen
 			trackProgressButtonTextPrefix = "✔"
 		} else {
@@ -373,7 +373,7 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 
 		flashcardList.Clear()
 
-		flashcardSetNameLabel.SetText(fmt.Sprintf("[ %s ]", appState.SelectedFlashcardSet.Name))
+		flashcardSetNameLabel.SetText(fmt.Sprintf("[ %s ]", appState.SelectedFlashcardSet().Name))
 
 		for i := window.Start; i <= window.End; i++ {
 			flashcardList.AddItem(
@@ -384,8 +384,8 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 			)
 		}
 
-		shuffleCheckbox.SetChecked(appState.SelectedFlashcardSet.Shuffled())
-		frontDropdown.SetCurrentOption(int(appState.SelectedFlashcardSet.Front))
+		shuffleCheckbox.SetChecked(appState.SelectedFlashcardSet().Shuffled())
+		frontDropdown.SetCurrentOption(int(appState.SelectedFlashcardSet().Front))
 
 		return nil
 	}

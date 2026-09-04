@@ -5,6 +5,13 @@ import (
 	"errors"
 )
 
+type FilterSortCriteria int
+
+const (
+	Recent FilterSortCriteria = iota
+	Alphabetical
+)
+
 var (
 	ErrNotFound      = errors.New("Entity not found")
 	ErrDuplicate     = errors.New("Entity already exists")

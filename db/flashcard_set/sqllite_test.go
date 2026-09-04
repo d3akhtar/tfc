@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -222,6 +223,8 @@ func TestFlashcardSetRepository_FilterFlashcardSets(t *testing.T) {
 			ShuffleSeed:   i + 20,
 		}
 
+		flashcardSet.AddFlashcard(fmt.Sprintf("name%d question", i), fmt.Sprintf("name%d answer", i))
+
 		err := repo.Create(ctx, flashcardSet)
 		if err != nil {
 			t.Fatalf("Unexpected error %v", err)
@@ -230,7 +233,11 @@ func TestFlashcardSetRepository_FilterFlashcardSets(t *testing.T) {
 		flashcardSets = append(flashcardSets, flashcardSet)
 	}
 
-	filtered, err := repo.FilterFlashcardSets(ctx, "name", 10, 0)
+	slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
+		return a.LastAccessed.Compare(b.LastAccessed)
+	})
+
+	filtered, err := repo.FilterFlashcardSets(ctx, "name", 10, 0, db.Recent)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -242,7 +249,23 @@ func TestFlashcardSetRepository_FilterFlashcardSets(t *testing.T) {
 		}
 	}
 
-	filtered, err = repo.FilterFlashcardSets(ctx, "name0", 10, 0)
+	slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	filtered, err = repo.FilterFlashcardSets(ctx, "name", 10, 0, db.Alphabetical)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	for i, got := range filtered {
+		err = test_utils.TestCmpFlashcardSet(flashcardSets[i], &got)
+		if err != nil {
+			t.Errorf("(%d) %v", i, err)
+		}
+	}
+
+	filtered, err = repo.FilterFlashcardSets(ctx, "name0", 10, 0, db.Alphabetical)
 	if len(filtered) != 1 {
 		t.Fatalf("len(filtered) expected=%v, got=%v", 1, len(filtered))
 	}
@@ -252,7 +275,7 @@ func TestFlashcardSetRepository_FilterFlashcardSets(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	filtered, err = repo.FilterFlashcardSets(ctx, "name", 5, 2)
+	filtered, err = repo.FilterFlashcardSets(ctx, "name", 5, 2, db.Alphabetical)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
 	}
@@ -495,5 +518,86 @@ func TestFlashcardSetRepository_Update(t *testing.T) {
 
 	if err != db.ErrNotFound {
 		t.Fatalf("expected=%v, got=%v", db.ErrNotFound, err)
+	}
+}
+
+func TestFlashcardSetRepository_ListRecentlyAccessedFlashcardSets(t *testing.T) {
+	ctx := context.Background()
+	database := testDB(t, false)
+	repo := flashcard_set.NewFlashcardSetRepository(database)
+
+	flashcardSets := []*domain.FlashcardSet{}
+	for i := range 10 {
+		flashcardSet := &domain.FlashcardSet{
+			Id:            i,
+			Name:          fmt.Sprintf("name%d", i),
+			Description:   fmt.Sprintf("desc%d", i),
+			LastAccessed:  time.Now(),
+			TrackProgress: i%2 == 0,
+			Front:         domain.FlashcardFront((i + 1) % 2),
+			Shuffle:       i%2 == 0,
+			ShuffleSeed:   i + 20,
+		}
+
+		flashcardSet.AddFlashcard(fmt.Sprintf("name%d question", i), fmt.Sprintf("name%d answer", i))
+
+		err := repo.Create(ctx, flashcardSet)
+		if err != nil {
+			t.Fatalf("Unexpected error %v", err)
+		}
+
+		flashcardSets = append(flashcardSets, flashcardSet)
+	}
+
+	slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
+		return a.LastAccessed.Compare(b.LastAccessed)
+	})
+
+	actual, err := repo.ListRecentlyAccessedFlashcardSets(ctx)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	for i, a := range actual {
+		err = test_utils.TestCmpFlashcardSet(flashcardSets[i], a)
+		if err != nil {
+			t.Errorf("(%d) %v", i, err)
+		}
+	}
+}
+
+func TestFlashcardSetRepository_UpdateLastAccessedTime(t *testing.T) {
+	ctx := context.Background()
+	database := testDB(t, true)
+	repo := flashcard_set.NewFlashcardSetRepository(database)
+
+	flashcardSet := &domain.FlashcardSet{
+		Name:          "set 1",
+		Description:   "desc 1",
+		LastAccessed:  time.Now().Add(-time.Second * 20),
+		TrackProgress: false,
+		Front:         domain.FlashcardFront(domain.Question),
+		Shuffle:       false,
+		ShuffleSeed:   0,
+	}
+
+	err := repo.Create(ctx, flashcardSet)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	newTime := time.Now()
+	err = repo.UpdateLastAccessedTime(ctx, flashcardSet)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	got, err := repo.GetById(ctx, flashcardSet.Id)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	if got.LastAccessed.Truncate(time.Second).UTC() != newTime.Truncate(time.Second).UTC() {
+		t.Fatalf("lastAccessed expected=%v, got=%v", newTime.Truncate(time.Second).UTC(), got.LastAccessed.Truncate(time.Second).UTC())
 	}
 }

@@ -97,9 +97,9 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 
 	studyRemainingCardsButton := NewButton("Study Remaining Cards").
 		SetSelectedFunc(func() {
-			appState.SelectedFlashcardSet.StartQuiz()
-			quiz = appState.SelectedFlashcardSet.Quiz
-			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+			appState.SelectedFlashcardSet().StartQuiz()
+			quiz = appState.SelectedFlashcardSet().Quiz
+			showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 
 			quizRepository.ReplaceQuiz(appState.Context, quiz)
 
@@ -116,10 +116,10 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 
 	resetProgressButton := NewButton("Reset Progress").
 		SetSelectedFunc(func() {
-			appState.SelectedFlashcardSet.ResetQuizProgress()
-			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet.Quiz)
-			quiz = appState.SelectedFlashcardSet.Quiz
-			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+			appState.SelectedFlashcardSet().ResetQuizProgress()
+			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet().Quiz)
+			quiz = appState.SelectedFlashcardSet().Quiz
+			showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 
 			contentView.SetText(quiz.CurrentlySelectedCard().Question)
 			contentViewContainer.SetTitle(fmt.Sprintf("%d / %d", 1, len(quiz.Flashcards)))
@@ -142,7 +142,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 		case tcell.KeyLeft:
 			if quiz.AreCardsLeft() {
 				quiz.GoToNextCard(false)
-				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+				showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 
 				if quiz.Finished() {
 					nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -157,7 +157,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 		case tcell.KeyRight:
 			if quiz.AreCardsLeft() {
 				quiz.GoToNextCard(true)
-				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+				showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 
 				if quiz.Finished() {
 					nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -177,7 +177,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 
 		case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyDEL:
 			if quiz.CanUndo() {
-				showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+				showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 				currentFlashcard = quiz.Undo()
 			}
 
@@ -207,7 +207,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 	unknownButton.SetSelectedFunc(func() {
 		if quiz.AreCardsLeft() {
 			quiz.GoToNextCard(false)
-			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+			showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 
 			if quiz.Finished() {
 				nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -236,7 +236,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 
 	undoButton.SetSelectedFunc(func() {
 		if quiz.CanUndo() {
-			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+			showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 			currentFlashcard = quiz.Undo()
 		}
 
@@ -258,7 +258,7 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 	knowButton.SetSelectedFunc(func() {
 		if quiz.AreCardsLeft() {
 			quiz.GoToNextCard(true)
-			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+			showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 
 			if quiz.Finished() {
 				nKnown, _ := quiz.GetKnownAndUnknownCount()
@@ -367,20 +367,20 @@ func InitQuizProgressTrackUi(appState *app.State, quizRepository quiz.QuizRepo) 
 		studyRemainingCardsButton.SetDisabled(false)
 
 		if quiz == nil ||
-			(appState.SelectedFlashcardSet.Quiz != nil &&
-				(quiz.Id != appState.SelectedFlashcardSet.Quiz.Id ||
-					appState.SelectedFlashcardSet.ShuffleSeed != flashcardSetShuffleSeed)) {
-			if appState.SelectedFlashcardSet.Quiz == nil {
-				appState.SelectedFlashcardSet.StartQuiz()
-				err := quizRepository.Create(appState.Context, appState.SelectedFlashcardSet.Quiz)
+			(appState.SelectedFlashcardSet().Quiz != nil &&
+				(quiz.Id != appState.SelectedFlashcardSet().Quiz.Id ||
+					appState.SelectedFlashcardSet().ShuffleSeed != flashcardSetShuffleSeed)) {
+			if appState.SelectedFlashcardSet().Quiz == nil {
+				appState.SelectedFlashcardSet().StartQuiz()
+				err := quizRepository.Create(appState.Context, appState.SelectedFlashcardSet().Quiz)
 				if err != nil {
 					return err
 				}
 			}
 
-			quiz = appState.SelectedFlashcardSet.Quiz
-			flashcardSetShuffleSeed = appState.SelectedFlashcardSet.ShuffleSeed
-			showAnswer = false || appState.SelectedFlashcardSet.Front == domain.Answer
+			quiz = appState.SelectedFlashcardSet().Quiz
+			flashcardSetShuffleSeed = appState.SelectedFlashcardSet().ShuffleSeed
+			showAnswer = false || appState.SelectedFlashcardSet().Front == domain.Answer
 		}
 
 		if quiz.Finished() {

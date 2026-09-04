@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/utils"
@@ -99,15 +100,25 @@ func (r *FlashcardSetRepository) Delete(ctx context.Context, id int) error {
 	return utils.DeleteQuery(r.db, ctx, "FlashcardSets", id)
 }
 
-func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter string, limit, offset int) ([]domain.FlashcardSet, error) {
+func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter string, limit, offset int, sort db.FilterSortCriteria) ([]domain.FlashcardSet, error) {
+	order := ""
+	switch sort {
+	case db.Recent:
+		order = "fs.LastAccessed"
+	case db.Alphabetical:
+		order = "fs.Name"
+	}
+
 	query := fmt.Sprintf(`
-		SELECT Id, Name, Description, LastAccessed, TrackProgress, Front, Shuffle, ShuffleSeed
-		FROM FlashcardSets
+		SELECT fs.Id, fs.Name, fs.Description, fs.LastAccessed, fs.TrackProgress, fs.Front, fs.Shuffle, fs.ShuffleSeed, COUNT(f.Id)
+		FROM FlashcardSets fs
+		JOIN Flashcards f ON f.FlashcardSetId = fs.Id
 		WHERE Name LIKE '%%%s%%'
-		ORDER BY Id ASC
+		GROUP BY fs.Id
+		ORDER BY %s ASC
 		LIMIT $1 OFFSET $2
 		`,
-		filter,
+		filter, order,
 	)
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -129,6 +140,7 @@ func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter
 			&fs.Front,
 			&fs.Shuffle,
 			&fs.ShuffleSeed,
+			&fs.FlashcardCount,
 		)
 
 		if err != nil {
@@ -396,4 +408,55 @@ func (r *FlashcardSetRepository) Update(ctx context.Context, entity *domain.Flas
 
 		return nil
 	})
+}
+
+func (r *FlashcardSetRepository) ListRecentlyAccessedFlashcardSets(ctx context.Context) ([]*domain.FlashcardSet, error) {
+	query := `
+		SELECT fs.Id, fs.Name, fs.Description, fs.LastAccessed, fs.TrackProgress, fs.Front, fs.Shuffle, fs.ShuffleSeed, COUNT(fc.Id)
+		FROM FlashcardSets fs
+		INNER JOIN Flashcards fc ON fc.FlashcardSetId = fs.Id
+		GROUP BY fs.Id
+		ORDER BY fs.LastAccessed ASC
+		LIMIT 30
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	flashcardSets := []*domain.FlashcardSet{}
+	for rows.Next() {
+		fs := &domain.FlashcardSet{}
+		err := rows.Scan(
+			&fs.Id,
+			&fs.Name,
+			&fs.Description,
+			&fs.LastAccessed,
+			&fs.TrackProgress,
+			&fs.Front,
+			&fs.Shuffle,
+			&fs.ShuffleSeed,
+			&fs.FlashcardCount,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		flashcardSets = append(flashcardSets, fs)
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, db.ErrNotFound
+	}
+
+	return flashcardSets, err
+}
+
+func (r *FlashcardSetRepository) UpdateLastAccessedTime(ctx context.Context, entity *domain.FlashcardSet) error {
+	query := `UPDATE FlashcardSets SET LastAccessed = $1 WHERE Id = $2`
+	return utils.ExecQueryUpdate(query, r.db, ctx, time.Now(), entity.Id)
 }

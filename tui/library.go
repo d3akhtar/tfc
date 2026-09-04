@@ -1,22 +1,17 @@
 package tui
 
 import (
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/folder"
-	"github.com/d3akhtar/tfc/domain"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.FlashcardSetRepo, folderRepository folder.FolderRepo) {
-	flashcardSets := []*domain.FlashcardSet{}
-	folders := []*domain.Folder{}
-
 	library := tview.NewPages()
 
 	libraryGrid := tview.NewGrid().
@@ -37,31 +32,43 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 			pos := row
 			selectedFolder := filteredFolderList[pos]
 			selectedFolder.LastAccessed = time.Now()
-			appState.SelectedFolder = selectedFolder
+			appState.SetSelectedFolder(selectedFolder)
 			appState.Navigation.GoToView(app.VIEW_NAMES.Folder)
 		})
 
 	flashcardSetList := tview.NewTable().SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			selectedFlashcardSet := filteredFlashcardSetList[pos]
-			selectedFlashcardSet.LastAccessed = time.Now()
-			appState.SelectedFlashcardSet = selectedFlashcardSet
+			selectedFlashcardSet := &filteredFlashcardSetList[pos]
+			appState.SetSelectedFlashcardSet(selectedFlashcardSet)
 
-			flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet)
+			flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, appState.SelectedFlashcardSet())
 			if err != nil {
 				return
 			}
 
-			appState.SelectedFlashcardSet.Flashcards = flashcards
+			appState.SelectedFlashcardSet().Flashcards = flashcards
 
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
 	sortDropdown.
 		SetSelectedFunc(func(_ string, option int) {
-			sortFlashcardSetPointerCollection(option, filteredFlashcardSetList)
-			sortFolderCollection(option, filteredFolderList)
+			sort := db.FilterSortCriteria(option)
+
+			sets, err := flashcardSetRepository.FilterFlashcardSets(appState.Context, "", 500, 0, sort)
+			if err != nil {
+				return
+			}
+
+			filteredFlashcardSetList = sets
+
+			folders, err := folderRepository.FilterFolders(appState.Context, "", 500, 0, sort)
+			if err != nil {
+				return
+			}
+
+			filteredFolderList = folders
 
 			flashcardSetList.Clear()
 			folderList.Clear()
@@ -97,19 +104,33 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 		SetBorderColor(Focused).
 		SetTitleColor(Focused)
 
-	searchFolderInputField := tview.NewInputField().
-		SetChangedFunc(func(text string) {
+	searchFolderInputField := tview.NewInputField()
+	searchFolderInputField.
+		SetDoneFunc(func(key tcell.Key) {
+			if key != tcell.KeyEnter {
+				return
+			}
+
 			flashcardSetList.Clear()
 			folderList.Clear()
 
-			filteredFlashcardSetList = []*domain.FlashcardSet{}
-			filteredFolderList = []*domain.Folder{}
+			text := searchFolderInputField.GetText()
+			sortOption, _ := sortDropdown.GetCurrentOption()
+			sort := db.FilterSortCriteria(sortOption)
 
-			for _, flashcardSet := range flashcardSets {
-				if text == "" || strings.Contains(strings.ToLower(flashcardSet.Name), strings.ToLower(text)) {
-					filteredFlashcardSetList = append(filteredFlashcardSetList, flashcardSet)
-				}
+			sets, err := flashcardSetRepository.FilterFlashcardSets(appState.Context, text, 500, 0, sort)
+			if err != nil {
+				return
 			}
+
+			filteredFlashcardSetList = sets
+
+			folders, err := folderRepository.FilterFolders(appState.Context, text, 500, 0, sort)
+			if err != nil {
+				return
+			}
+
+			filteredFolderList = folders
 
 			for i, flashcardSet := range filteredFlashcardSetList {
 				flashcardSetList.SetCell(
@@ -117,12 +138,6 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 					0,
 					tview.NewTableCell(flashcardSet.String()).SetExpansion(1),
 				)
-			}
-
-			for _, folder := range folders {
-				if text == "" || strings.Contains(strings.ToLower(folder.Name), strings.ToLower(text)) {
-					filteredFolderList = append(filteredFolderList, folder)
-				}
 			}
 
 			for i, folder := range filteredFolderList {
@@ -191,9 +206,6 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 		case tcell.KeyTab:
 			appState.App.SetFocus(sortDropdown)
 			return nil
-		case tcell.KeyEnter:
-			appState.App.SetFocus(folderList)
-			return nil
 		}
 
 		return event
@@ -213,27 +225,24 @@ func InitLibraryUi(appState *app.State, flashcardSetRepository flashcard_set.Fla
 		AddItem(flashcardSetList, 2, 0, 1, 3, 0, 0, false)
 
 	refresh := func() error {
-		sets, err := flashcardSetRepository.List(appState.Context, 0, 50)
+		sortOption, _ := sortDropdown.GetCurrentOption()
+		option := db.FilterSortCriteria(sortOption)
+
+		sets, err := flashcardSetRepository.FilterFlashcardSets(appState.Context, "", 500, 0, option)
 		if err != nil {
 			return err
 		}
 
-		flashcardSets = sets
+		filteredFlashcardSetList = sets
 
-		folders, err = folderRepository.List(appState.Context, 0, 50)
+		folders, err := folderRepository.FilterFolders(appState.Context, "", 500, 0, option)
 		if err != nil {
 			return err
 		}
+
+		filteredFolderList = folders
 
 		searchFolderInputField.SetText("")
-
-		filteredFlashcardSetList = slices.Clone(flashcardSets)
-		filteredFolderList = slices.Clone(folders)
-
-		option, _ := sortDropdown.GetCurrentOption()
-
-		sortFlashcardSetPointerCollection(option, filteredFlashcardSetList)
-		sortFolderCollection(option, filteredFolderList)
 
 		flashcardSetList.Clear()
 		folderList.Clear()
