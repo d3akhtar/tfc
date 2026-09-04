@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/d3akhtar/tfc/db"
 	"github.com/d3akhtar/tfc/db/utils"
@@ -103,15 +104,17 @@ func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter
 	order := ""
 	switch sort {
 	case db.Recent:
-		order = "LastAccessed"
+		order = "fs.LastAccessed"
 	case db.Alphabetical:
-		order = "Name"
+		order = "fs.Name"
 	}
 
 	query := fmt.Sprintf(`
-		SELECT Id, Name, Description, LastAccessed, TrackProgress, Front, Shuffle, ShuffleSeed
-		FROM FlashcardSets
+		SELECT fs.Id, fs.Name, fs.Description, fs.LastAccessed, fs.TrackProgress, fs.Front, fs.Shuffle, fs.ShuffleSeed, COUNT(f.Id)
+		FROM FlashcardSets fs
+		JOIN Flashcards f ON f.FlashcardSetId = fs.Id
 		WHERE Name LIKE '%%%s%%'
+		GROUP BY fs.Id
 		ORDER BY %s ASC
 		LIMIT $1 OFFSET $2
 		`,
@@ -137,6 +140,7 @@ func (r *FlashcardSetRepository) FilterFlashcardSets(ctx context.Context, filter
 			&fs.Front,
 			&fs.Shuffle,
 			&fs.ShuffleSeed,
+			&fs.FlashcardCount,
 		)
 
 		if err != nil {
@@ -450,4 +454,9 @@ func (r *FlashcardSetRepository) ListRecentlyAccessedFlashcardSets(ctx context.C
 	}
 
 	return flashcardSets, err
+}
+
+func (r *FlashcardSetRepository) UpdateLastAccessedTime(ctx context.Context, entity *domain.FlashcardSet) error {
+	query := `UPDATE FlashcardSets SET LastAccessed = $1 WHERE Id = $2`
+	return utils.ExecQueryUpdate(query, r.db, ctx, time.Now(), entity.Id)
 }

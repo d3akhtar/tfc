@@ -14,4 +14,5 @@ type FlashcardSetRepo interface {
 	GetAllFlashcardsForSet(ctx context.Context, entity *domain.FlashcardSet) ([]domain.Flashcard, error)
 	GetQuizForFlashcardSet(ctx context.Context, entity *domain.FlashcardSet) (*domain.Quiz, error)
 	FilterFlashcardSets(ctx context.Context, query string, limit, offset int, sort db.FilterSortCriteria) ([]domain.FlashcardSet, error)
+	UpdateLastAccessedTime(ctx context.Context, entity *domain.FlashcardSet) error
 }

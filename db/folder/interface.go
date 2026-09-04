@@ -14,4 +14,5 @@ type FolderRepo interface {
 	GetFlashcardSetsForFolder(ctx context.Context, entity *domain.Folder) ([]*domain.FlashcardSet, error)
 	FilterFolders(ctx context.Context, query string, limit, offset int, sort db.FilterSortCriteria) ([]*domain.Folder, error)
 	FilterFlashcardSetsInFolder(ctx context.Context, entity *domain.Folder, query string, limit, offset int, sort db.FilterSortCriteria) ([]*domain.FlashcardSet, error)
+	UpdateLastAccessedTime(ctx context.Context, entity *domain.Folder) error
 }

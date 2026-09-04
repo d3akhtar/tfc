@@ -686,3 +686,34 @@ func TestFolderRepository_ListRecentlyAccessedFolders(t *testing.T) {
 		}
 	}
 }
+
+func TestFolderRepository_UpdateLastAccessedTime(t *testing.T) {
+	ctx := context.Background()
+	database := testDB(t)
+	repo := folder.NewFolderRepository(database)
+
+	folder := &domain.Folder{
+		Name:         "folder",
+		LastAccessed: time.Now().Add(-time.Second * 20),
+	}
+
+	err := repo.Create(ctx, folder)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	newTime := time.Now()
+	err = repo.UpdateLastAccessedTime(ctx, folder)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	got, err := repo.GetById(ctx, folder.Id)
+	if err != nil {
+		t.Fatalf("Unexpected error %v", err)
+	}
+
+	if got.LastAccessed.Truncate(time.Second).UTC() != newTime.Truncate(time.Second).UTC() {
+		t.Fatalf("lastAccessed expected=%v, got=%v", newTime.Truncate(time.Second).UTC(), got.LastAccessed.Truncate(time.Second).UTC())
+	}
+}

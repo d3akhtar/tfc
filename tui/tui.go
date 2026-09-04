@@ -2,8 +2,6 @@ package tui
 
 import (
 	"database/sql"
-	"slices"
-	"strings"
 
 	"github.com/d3akhtar/tfc/app"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
@@ -15,14 +13,9 @@ import (
 )
 
 var (
-	filteredFolderFlashcardSetList []domain.FlashcardSet
-	filteredFlashcardSetList       []*domain.FlashcardSet
+	filteredFolderFlashcardSetList []*domain.FlashcardSet
+	filteredFlashcardSetList       []domain.FlashcardSet
 	filteredFolderList             []*domain.Folder
-)
-
-var (
-	recentOption       = 0
-	alphabeticalOption = 1
 )
 
 var (
@@ -45,11 +38,11 @@ func Init(appState *app.State, db *sql.DB) {
 	quizRepository := quiz.NewQuizRepository(db)
 
 	appState.AddCallbackForSelectedFlashcardSetChange(func(fs *domain.FlashcardSet) {
-		flashcardSetRepository.Update(appState.Context, fs)
+		flashcardSetRepository.UpdateLastAccessedTime(appState.Context, fs)
 	})
 
 	appState.AddCallbackForSelectedFolderChange(func(f *domain.Folder) {
-		folderRepository.Update(appState.Context, f)
+		folderRepository.UpdateLastAccessedTime(appState.Context, f)
 	})
 
 	InitHomeUi(appState, flashcardSetRepository, folderRepository)
@@ -111,43 +104,4 @@ func SetBorderFocusAndBlurCallbacks(p *tview.Box) {
 func NewButton(title string) *tview.Button {
 	return tview.NewButton(title).
 		SetStyle(PrimaryButtonStyle)
-}
-
-func sortFolderCollection(option int, folders []*domain.Folder) {
-	switch option {
-	case recentOption:
-		slices.SortFunc(folders, func(a, b *domain.Folder) int {
-			return -a.LastAccessed.Compare(b.LastAccessed)
-		})
-	case alphabeticalOption:
-		slices.SortFunc(folders, func(a, b *domain.Folder) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
-}
-
-func sortFlashcardSetPointerCollection(option int, flashcardSets []*domain.FlashcardSet) {
-	switch option {
-	case recentOption:
-		slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
-			return -a.LastAccessed.Compare(b.LastAccessed)
-		})
-	case alphabeticalOption:
-		slices.SortFunc(flashcardSets, func(a, b *domain.FlashcardSet) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
-}
-
-func sortFlashcardSetCollection(option int, flashcardSets []domain.FlashcardSet) {
-	switch option {
-	case recentOption:
-		slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
-			return -a.LastAccessed.Compare(b.LastAccessed)
-		})
-	case alphabeticalOption:
-		slices.SortFunc(flashcardSets, func(a, b domain.FlashcardSet) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
 }
