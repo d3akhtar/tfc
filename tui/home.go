@@ -273,6 +273,8 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 			foldersTable.SetCell(i, 0, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
 		}
 
+		foldersTable.Select(0, 0)
+
 		return nil
 	}
 
