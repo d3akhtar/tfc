@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/domain"
 	"github.com/d3akhtar/tfc/utils"
@@ -12,20 +13,22 @@ import (
 )
 
 type flashcardEditPrimitiveInfo struct {
-	Layout   *tview.Flex
-	Question *tview.TextArea
-	Answer   *tview.TextArea
+	Layout                       *tview.Grid
+	Question, Answer             *tview.TextArea
+	MoveUpButton, MoveDownButton *tview.Button
 }
 
-func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_set.FlashcardSetRepo) {
+func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_set.FlashcardSetRepo, flashcardRepository flashcard.FlashcardRepo) {
 	var selectedFlashcardSet *domain.FlashcardSet = nil
 
 	var window *utils.SlidingWindow[domain.Flashcard]
 
-	maxFlashcardsShownInPreviewFlashcardList := 3
+	maxFlashcardsShownInPreviewFlashcardList := 2
+	numFlashcardsShownInPreviewFlashcardList := maxFlashcardsShownInPreviewFlashcardList
 
 	lastSelectedFlashcardPrimitive := 0
-	activeFlashcardPrimitives := make([]flashcardEditPrimitiveInfo, maxFlashcardsShownInPreviewFlashcardList)
+	activeFlashcardPrimitives := make([]flashcardEditPrimitiveInfo, numFlashcardsShownInPreviewFlashcardList)
+	windowBeingShifted := false
 
 	flashcardList := tview.NewFlex().
 		SetDirection(tview.FlexRow)
@@ -36,8 +39,13 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 	SetBorderFocusAndBlurCallbacks(flashcardList.Box)
 
+	var refreshList func(windowStart int)
+	var deleteCallback func(deletedFc *domain.Flashcard)
+
 	newFlashcardPrimitive := func(flashcard domain.Flashcard, pos int) tview.Primitive {
-		layout := tview.NewFlex()
+		layout := tview.NewGrid().
+			SetRows(-1, 3).
+			SetColumns(-1, -1)
 
 		layout.
 			SetBorder(true).
@@ -76,11 +84,23 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 		SetBorderFocusAndBlurCallbacks(answer.Box)
 
-		layout.AddItem(question, 0, 1, false)
-		layout.AddItem(answer, 0, 1, false)
+		moveUpButton := NewButton("Move Up")
+		moveDownButton := NewButton("Move Down")
+		deleteButton := NewButton("Delete")
+
+		buttonGroup := tview.NewFlex().
+			AddItem(moveUpButton, 0, 1, true).
+			AddItem(nil, 1, 0, false).
+			AddItem(moveDownButton, 0, 1, false).
+			AddItem(nil, 1, 0, false).
+			AddItem(deleteButton, 0, 1, false)
+
+		layout.AddItem(question, 0, 0, 1, 1, 0, 0, false)
+		layout.AddItem(answer, 0, 1, 1, 1, 0, 0, false)
+		layout.AddItem(buttonGroup, 1, 0, 1, 2, 0, 0, false)
 
 		layout.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			if question.HasFocus() || answer.HasFocus() {
+			if question.HasFocus() || answer.HasFocus() || moveUpButton.HasFocus() || moveDownButton.HasFocus() || deleteButton.HasFocus() {
 				return event
 			}
 
@@ -93,8 +113,10 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 						for i := window.Start; i <= window.End; i++ {
 							flashcard := window.Collection[i]
 							activeFlashcardPrimitives[idx].Layout.SetTitle(strconv.Itoa(i + 1))
+							windowBeingShifted = true
 							activeFlashcardPrimitives[idx].Question.SetText(flashcard.Question, true)
 							activeFlashcardPrimitives[idx].Answer.SetText(flashcard.Answer, true)
+							windowBeingShifted = false
 							idx++
 						}
 					}
@@ -104,15 +126,17 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 				return nil
 			case tcell.KeyDown:
-				if pos == maxFlashcardsShownInPreviewFlashcardList-1 {
+				if pos == numFlashcardsShownInPreviewFlashcardList-1 {
 					if window.CanAdvance() {
 						idx := 0
 						window.Advance()
 						for i := window.Start; i <= window.End; i++ {
 							flashcard := window.Collection[i]
 							activeFlashcardPrimitives[idx].Layout.SetTitle(strconv.Itoa(i + 1))
+							windowBeingShifted = true
 							activeFlashcardPrimitives[idx].Question.SetText(flashcard.Question, true)
 							activeFlashcardPrimitives[idx].Answer.SetText(flashcard.Answer, true)
+							windowBeingShifted = false
 							idx++
 						}
 					}
@@ -129,12 +153,77 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 				return nil
 			}
 
-			return event
+			return nil
 		})
+
+		deleteButton.
+			SetSelectedFunc(func() {
+				fc := selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start]
+				deleteCallback(&fc)
+				appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout)
+			})
+
+		moveUpButton.
+			SetSelectedFunc(func() {
+				fc := selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start]
+				if !selectedFlashcardSet.SwitchCardPosition(fc.Position, fc.Position-1) {
+					return
+				}
+
+				if lastSelectedFlashcardPrimitive == 0 {
+					if window.CanRetreat() {
+						window.Retreat()
+					}
+				} else {
+					lastSelectedFlashcardPrimitive--
+				}
+
+				idx := 0
+				for i := window.Start; i <= window.End; i++ {
+					flashcard := window.Collection[i]
+					activeFlashcardPrimitives[idx].Layout.SetTitle(strconv.Itoa(i + 1))
+					windowBeingShifted = true
+					activeFlashcardPrimitives[idx].Question.SetText(flashcard.Question, true)
+					activeFlashcardPrimitives[idx].Answer.SetText(flashcard.Answer, true)
+					windowBeingShifted = false
+					idx++
+				}
+
+				appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].MoveUpButton)
+			})
+
+		moveDownButton.
+			SetSelectedFunc(func() {
+				fc := selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start]
+				if !selectedFlashcardSet.SwitchCardPosition(fc.Position, fc.Position+1) {
+					return
+				}
+
+				if lastSelectedFlashcardPrimitive == maxFlashcardsShownInPreviewFlashcardList-1 {
+					if window.CanAdvance() {
+						window.Advance()
+					}
+				} else {
+					lastSelectedFlashcardPrimitive++
+				}
+
+				idx := 0
+				for i := window.Start; i <= window.End; i++ {
+					flashcard := window.Collection[i]
+					activeFlashcardPrimitives[idx].Layout.SetTitle(strconv.Itoa(i + 1))
+					windowBeingShifted = true
+					activeFlashcardPrimitives[idx].Question.SetText(flashcard.Question, true)
+					activeFlashcardPrimitives[idx].Answer.SetText(flashcard.Answer, true)
+					windowBeingShifted = false
+					idx++
+				}
+
+				appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].MoveDownButton)
+			})
 
 		question.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
-			case tcell.KeyTab, tcell.KeyBacktab:
+			case tcell.KeyTab:
 				appState.SetFocus(answer)
 				return nil
 			case tcell.KeyEsc:
@@ -144,14 +233,13 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 			return event
 		})
 
-		question.SetChangedFunc(func() {
-			selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start].Question = question.GetText()
-		})
-
 		answer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Key() {
-			case tcell.KeyTab, tcell.KeyBacktab:
+			case tcell.KeyBacktab:
 				appState.SetFocus(question)
+				return nil
+			case tcell.KeyTab:
+				appState.SetFocus(moveUpButton)
 				return nil
 			case tcell.KeyEsc:
 				appState.SetFocus(layout)
@@ -160,23 +248,111 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 			return event
 		})
 
+		moveUpButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyBacktab:
+				appState.SetFocus(answer)
+				return nil
+			case tcell.KeyTab:
+				appState.SetFocus(moveDownButton)
+				return nil
+			case tcell.KeyEsc:
+				appState.SetFocus(layout)
+			}
+
+			return event
+		})
+
+		moveDownButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyBacktab:
+				appState.SetFocus(moveUpButton)
+				return nil
+			case tcell.KeyTab:
+				appState.SetFocus(deleteButton)
+				return nil
+			case tcell.KeyEsc:
+				appState.SetFocus(layout)
+			}
+
+			return event
+		})
+
+		deleteButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyBacktab:
+				appState.SetFocus(moveDownButton)
+				return nil
+			case tcell.KeyEsc:
+				appState.SetFocus(layout)
+			}
+
+			return event
+		})
+
+		question.SetChangedFunc(func() {
+			if !windowBeingShifted {
+				selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start].Question = question.GetText()
+			}
+		})
+
 		answer.SetChangedFunc(func() {
-			selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start].Answer = answer.GetText()
+			if !windowBeingShifted {
+				selectedFlashcardSet.Flashcards[lastSelectedFlashcardPrimitive+window.Start].Answer = answer.GetText()
+			}
 		})
 
 		activeFlashcardPrimitives[pos] = flashcardEditPrimitiveInfo{
-			Layout:   layout,
-			Question: question,
-			Answer:   answer,
+			Layout:         layout,
+			Question:       question,
+			Answer:         answer,
+			MoveUpButton:   moveUpButton,
+			MoveDownButton: moveDownButton,
 		}
 
 		return layout
 	}
 
+	refreshList = func(windowStart int) {
+		flashcardList.Clear()
+
+		numFlashcardsShownInPreviewFlashcardList = min(maxFlashcardsShownInPreviewFlashcardList, len(selectedFlashcardSet.Flashcards))
+
+		window = utils.NewSlidingWindow(windowStart, numFlashcardsShownInPreviewFlashcardList, selectedFlashcardSet.GetFlashcards())
+
+		for i := window.Start; i <= window.End; i++ {
+			prim := newFlashcardPrimitive(window.Collection[i], i)
+			prim.(*tview.Grid).
+				SetTitle(strconv.Itoa((i + 1)))
+
+			flashcardList.AddItem(
+				prim,
+				0,
+				1,
+				false,
+			)
+		}
+	}
+
+	deleteCallback = func(fc *domain.Flashcard) {
+		selectedFlashcardSet.RemoveById(fc.Id)
+
+		if appState.SelectedFlashcardSet() != nil {
+			err := flashcardRepository.Delete(appState.Context, fc.Id)
+			if err != nil {
+				return
+			}
+		}
+
+		lastSelectedFlashcardPrimitive = min(lastSelectedFlashcardPrimitive, len(selectedFlashcardSet.Flashcards)-1)
+
+		refreshList(window.Start)
+	}
+
 	flashcardEdit := tview.NewPages()
 
 	edit := tview.NewGrid().
-		SetRows(-1, -2, -10, -2)
+		SetRows(-1, -2, -12, -2)
 
 	titleInput := tview.NewInputField().
 		SetFieldBackgroundColor(Background).
@@ -266,9 +442,9 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 			flashcardList.Clear()
 
-			maxFlashcardsShownInPreviewFlashcardList = min(3, len(selectedFlashcardSet.Flashcards))
+			numFlashcardsShownInPreviewFlashcardList = min(maxFlashcardsShownInPreviewFlashcardList, len(selectedFlashcardSet.Flashcards))
 
-			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, selectedFlashcardSet.GetFlashcards())
+			window = utils.NewSlidingWindow(0, numFlashcardsShownInPreviewFlashcardList, selectedFlashcardSet.GetFlashcards())
 
 			for i := window.Start; i <= window.End; i++ {
 				flashcardList.AddItem(
@@ -386,9 +562,9 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		titleInput.SetText(selectedFlashcardSet.Name)
 		descriptionTextArea.SetText(selectedFlashcardSet.Description, true)
 
-		maxFlashcardsShownInPreviewFlashcardList = min(3, len(selectedFlashcardSet.Flashcards))
+		numFlashcardsShownInPreviewFlashcardList = min(maxFlashcardsShownInPreviewFlashcardList, len(selectedFlashcardSet.Flashcards))
 
-		window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, selectedFlashcardSet.GetFlashcards())
+		window = utils.NewSlidingWindow(0, numFlashcardsShownInPreviewFlashcardList, selectedFlashcardSet.GetFlashcards())
 
 		for i := window.Start; i <= window.End; i++ {
 			flashcardList.AddItem(
@@ -403,9 +579,11 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 	}
 
 	exit := func() error {
-		err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
-		if err != nil {
-			return err
+		if appState.SelectedFlashcardSet() != nil {
+			err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

@@ -103,16 +103,14 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 
 		err := folderRepository.Create(appState.Context, newFolder)
 		if err != nil {
-			// At some point, make a separate page that displays errors
 			return
 		}
 
 		folders = append(folders, newFolder)
 
 		newFolderNameInputField.SetText("")
-		row := (len(folders) - 1) / 3
-		column := (len(folders) - 1) % 3
-		foldersTable.SetCell(row, column, tview.NewTableCell(fmt.Sprintf("○ %s", newFolder.Name)).SetExpansion(1))
+		row := len(folders) - 1
+		foldersTable.SetCell(row, 0, tview.NewTableCell(fmt.Sprintf("○ %s", newFolder.Name)).SetExpansion(1))
 	}
 
 	newFolderForm := tview.NewForm().
@@ -274,6 +272,8 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		for i, loadedFolder := range folders {
 			foldersTable.SetCell(i, 0, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
 		}
+
+		foldersTable.Select(0, 0)
 
 		return nil
 	}

@@ -6,7 +6,7 @@ type SlidingWindow[T any] struct {
 }
 
 func NewSlidingWindow[T any](start, size int, collection []T) *SlidingWindow[T] {
-	if start >= size {
+	if start+size > len(collection) {
 		panic(start)
 	}
 
