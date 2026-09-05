@@ -403,9 +403,11 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 	}
 
 	exit := func() error {
-		err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
-		if err != nil {
-			return err
+		if appState.SelectedFlashcardSet() != nil {
+			err := flashcardSetRepository.Update(appState.Context, selectedFlashcardSet)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
