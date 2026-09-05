@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/folder"
 	"github.com/d3akhtar/tfc/db/quiz"
@@ -33,6 +34,7 @@ func SetDefaults() {
 }
 
 func Init(appState *app.State, db *sql.DB) {
+	flashcardRepository := flashcard.NewFlashcardRepository(db)
 	flashcardSetRepository := flashcard_set.NewFlashcardSetRepository(db)
 	folderRepository := folder.NewFolderRepository(db)
 	quizRepository := quiz.NewQuizRepository(db)
@@ -47,7 +49,7 @@ func Init(appState *app.State, db *sql.DB) {
 
 	InitHomeUi(appState, flashcardSetRepository, folderRepository)
 	InitLibraryUi(appState, flashcardSetRepository, folderRepository)
-	InitFlashcardEditUi(appState, flashcardSetRepository)
+	InitFlashcardEditUi(appState, flashcardSetRepository, flashcardRepository)
 	InitFlashcardSetPreview(appState, flashcardSetRepository, quizRepository)
 	InitFolderUi(appState, folderRepository, flashcardSetRepository)
 	InitQuizNormalUi(appState)
@@ -87,6 +89,51 @@ func NewVerticallyAlignedTextView(text string) *tview.TextView {
 	})
 
 	return t
+}
+
+func NewConfirmActionModal(appState *app.State, confirm, cancel func()) tview.Primitive {
+	grid := tview.NewGrid().
+		SetRows(-1, -1).
+		SetColumns(-1, 1, -1)
+
+	header := tview.NewTextView().
+		SetTextAlign(tview.AlignCenter).
+		SetText("Are you sure?").
+		SetLabelWidth(0)
+
+	confirmButton := NewButton("Yes").SetSelectedFunc(confirm)
+	cancelButton := NewButton("No").SetSelectedFunc(cancel)
+
+	confirmButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyRight, tcell.KeyTab:
+			appState.SetFocus(cancelButton)
+			return nil
+		}
+
+		return event
+	})
+
+	cancelButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyLeft, tcell.KeyBacktab:
+			appState.SetFocus(confirmButton)
+			return nil
+		}
+
+		return event
+	})
+
+	grid.
+		AddItem(header, 0, 0, 1, 3, 0, 0, false).
+		AddItem(confirmButton, 1, 0, 1, 1, 0, 0, true).
+		AddItem(cancelButton, 1, 2, 1, 1, 0, 0, false)
+
+	SetBorderFocusAndBlurCallbacks(grid.Box)
+
+	modal := NewModal(grid, 30, 7)
+
+	return modal
 }
 
 func SetBorderFocusAndBlurCallbacks(p *tview.Box) {

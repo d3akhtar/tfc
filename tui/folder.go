@@ -190,6 +190,10 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 			folderPage.SwitchToPage("main")
 		})
 
+	deleteButton := NewButton("Delete").SetSelectedFunc(func() {
+		folderPage.ShowPage("deleteConfirm")
+	})
+
 	flashcardSetListSearchInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
@@ -251,6 +255,24 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(folderFlashcardSetList)
 			return nil
+		case tcell.KeyTab:
+			appState.App.SetFocus(deleteButton)
+			return nil
+		case tcell.KeyRune:
+			if event.Rune() == '/' {
+				appState.App.SetFocus(searchFolderInputField)
+				return nil
+			}
+		}
+
+		return event
+	})
+
+	deleteButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyBacktab:
+			appState.App.SetFocus(addFlashcardSetButton)
+			return nil
 		case tcell.KeyRune:
 			if event.Rune() == '/' {
 				appState.App.SetFocus(searchFolderInputField)
@@ -284,6 +306,11 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		return event
 	})
 
+	buttons := tview.NewFlex().
+		AddItem(addFlashcardSetButton, 0, 1, true).
+		AddItem(nil, 1, 0, false).
+		AddItem(deleteButton, 0, 1, false)
+
 	folderView.
 		AddItem(
 			tview.NewFlex().
@@ -302,7 +329,7 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 				AddItem(nil, 0, 1, false),
 			0, 3, 1, 1, 0, 0, false).
 		AddItem(folderFlashcardSetList, 1, 0, 1, 4, 0, 0, true).
-		AddItem(addFlashcardSetButton, 2, 0, 1, 4, 0, 0, false)
+		AddItem(buttons, 2, 0, 1, 4, 0, 0, false)
 
 	folderPage.SetChangedFunc(func() {
 		if pg, _ := folderPage.GetFrontPage(); pg == "main" && appState.SelectedFolder() != nil {
@@ -334,9 +361,26 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		}
 	})
 
+	deleteConfirm := NewConfirmActionModal(appState,
+		func() {
+			err := folderRepository.Delete(appState.Context, appState.SelectedFolder().Id)
+			if err != nil {
+				return
+			}
+
+			appState.SetSelectedFolder(nil)
+
+			folderPage.HidePage("deleteConfirm")
+			appState.Navigation.RevertView()
+		},
+		func() {
+			folderPage.HidePage("deleteConfirm")
+		})
+
 	folderPage.
 		AddPage("main", folderView, true, true).
-		AddPage("flashcard", addFlashcardSetView, true, false)
+		AddPage("flashcard", addFlashcardSetView, true, false).
+		AddPage("deleteConfirm", deleteConfirm, true, false)
 
 	refresh := func() error {
 		sortOption, _ := sortDropdown.GetCurrentOption()
@@ -404,7 +448,11 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 	}
 
 	exit := func() error {
-		return folderRepository.Update(appState.Context, appState.SelectedFolder())
+		if appState.SelectedFolder() != nil {
+			return folderRepository.Update(appState.Context, appState.SelectedFolder())
+		}
+
+		return nil
 	}
 
 	appState.Navigation.AddView(app.VIEW_NAMES.Folder, folderPage, false, refresh, exit)

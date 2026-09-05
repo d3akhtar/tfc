@@ -53,6 +53,21 @@ func (f FlashcardSet) String() string {
 	)
 }
 
+func (f *FlashcardSet) SwitchCardPosition(oldPos, newPos int) bool {
+	if newPos < 0 || newPos > len(f.Flashcards)-1 {
+		return false
+	}
+
+	f.Flashcards[newPos].Position = oldPos
+	f.Flashcards[oldPos].Position = newPos
+
+	temp := f.Flashcards[newPos]
+	f.Flashcards[newPos] = f.Flashcards[oldPos]
+	f.Flashcards[oldPos] = temp
+
+	return true
+}
+
 func (f *FlashcardSet) Shuffled() bool {
 	return f.Shuffle
 }
@@ -106,6 +121,12 @@ func (f *FlashcardSet) AddFlashcard(question, answer string) {
 	}
 
 	f.Flashcards = append(f.Flashcards, flashcard)
+}
+
+func (f *FlashcardSet) RemoveById(id int) {
+	f.Flashcards = slices.DeleteFunc(f.Flashcards, func(fc Flashcard) bool {
+		return fc.Id == id
+	})
 }
 
 func (f *FlashcardSet) ResetQuizProgress() {
