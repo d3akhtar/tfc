@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/d3akhtar/tfc/app"
+	"github.com/d3akhtar/tfc/db/flashcard"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/folder"
 	"github.com/d3akhtar/tfc/db/quiz"
@@ -33,6 +34,7 @@ func SetDefaults() {
 }
 
 func Init(appState *app.State, db *sql.DB) {
+	flashcardRepository := flashcard.NewFlashcardRepository(db)
 	flashcardSetRepository := flashcard_set.NewFlashcardSetRepository(db)
 	folderRepository := folder.NewFolderRepository(db)
 	quizRepository := quiz.NewQuizRepository(db)
@@ -47,7 +49,7 @@ func Init(appState *app.State, db *sql.DB) {
 
 	InitHomeUi(appState, flashcardSetRepository, folderRepository)
 	InitLibraryUi(appState, flashcardSetRepository, folderRepository)
-	InitFlashcardEditUi(appState, flashcardSetRepository)
+	InitFlashcardEditUi(appState, flashcardSetRepository, flashcardRepository)
 	InitFlashcardSetPreview(appState, flashcardSetRepository, quizRepository)
 	InitFolderUi(appState, folderRepository, flashcardSetRepository)
 	InitQuizNormalUi(appState)
