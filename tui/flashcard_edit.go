@@ -404,10 +404,11 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardSetPreview)
 		})
 
-	actionButtonGroup := tview.NewFlex().
-		AddItem(addCardButton, 0, 1, true).
-		AddItem(nil, 2, 0, false).
-		AddItem(finishButton, 0, 1, false)
+	deleteButton := NewButton("Delete").SetSelectedFunc(func() {
+		flashcardEdit.ShowPage("deleteConfirm")
+	})
+
+	actionButtonGroup := tview.NewFlex()
 
 	newFlashcardInputForm := tview.NewForm().
 		SetButtonsAlign(tview.AlignCenter).
@@ -460,18 +461,6 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		AddButton("Cancel", func() {
 			flashcardEdit.HidePage("flashcard")
 		})
-
-	confirmDeleteButton := NewButton("Confirm")
-	cancelDeleteButton := NewButton("Cancel").
-		SetSelectedFunc(func() {
-			flashcardEdit.HidePage("delete")
-		})
-
-	confirmDeleteDialog := tview.NewFrame(
-		tview.NewFlex().
-			AddItem(confirmDeleteButton, 0, 1, false).
-			AddItem(cancelDeleteButton, 0, 1, true),
-	).AddText("Are you sure you want to delete this card?", true, tview.AlignCenter, tcell.ColorWhite)
 
 	titleInput.
 		SetDoneFunc(func(_ tcell.Key) {
@@ -530,6 +519,19 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		case tcell.KeyBacktab, tcell.KeyLeft:
 			appState.SetFocus(addCardButton)
 			return nil
+		case tcell.KeyTab, tcell.KeyRight:
+			appState.SetFocus(deleteButton)
+			return nil
+		}
+
+		return event
+	})
+
+	deleteButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyBacktab, tcell.KeyLeft:
+			appState.SetFocus(finishButton)
+			return nil
 		}
 
 		return event
@@ -541,11 +543,28 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		AddItem(flashcardList, 2, 0, 1, 1, 0, 0, false).
 		AddItem(actionButtonGroup, 3, 0, 1, 1, 0, 0, false)
 
+	deleteConfirm := NewConfirmActionModal(appState,
+		func() {
+			err := flashcardSetRepository.Delete(appState.Context, appState.SelectedFlashcardSet().Id)
+			if err != nil {
+				return
+			}
+
+			appState.SetSelectedFlashcardSet(nil)
+
+			flashcardEdit.HidePage("deleteConfirm")
+			appState.Navigation.GoToView(app.VIEW_NAMES.Home)
+		},
+		func() {
+			flashcardEdit.HidePage("deleteConfirm")
+		})
+
 	flashcardEdit.AddPage("main", edit, true, true)
 	flashcardEdit.AddPage("flashcard", newFlashcardInputFormModal, true, false)
-	flashcardEdit.AddPage("delete", confirmDeleteDialog, true, false)
+	flashcardEdit.AddPage("deleteConfirm", deleteConfirm, true, false)
 
 	refresh := func() error {
+		actionButtonGroup.Clear()
 		flashcardList.Clear()
 
 		if selectedFlashcardSet != appState.SelectedFlashcardSet() {
@@ -555,8 +574,20 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		if selectedFlashcardSet == nil {
 			selectedFlashcardSet = domain.NewFlashcardSet("Unnamed")
 			finishButton.SetLabel("Create")
+
+			actionButtonGroup.
+				AddItem(addCardButton, 0, 1, true).
+				AddItem(nil, 1, 0, false).
+				AddItem(finishButton, 0, 1, false)
 		} else {
 			finishButton.SetLabel("Finish")
+
+			actionButtonGroup.
+				AddItem(addCardButton, 0, 1, true).
+				AddItem(nil, 1, 0, false).
+				AddItem(finishButton, 0, 1, false).
+				AddItem(nil, 1, 0, false).
+				AddItem(deleteButton, 0, 1, false)
 		}
 
 		titleInput.SetText(selectedFlashcardSet.Name)
