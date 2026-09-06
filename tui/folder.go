@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"slices"
 	"time"
 
@@ -18,23 +17,37 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 	folderPage := tview.NewPages()
 
 	folderView := tview.NewGrid().
-		SetRows(3, -20, -2).
-		SetColumns(-1, -3, 3, -1)
+		SetRows(3, -18, -2).
+		SetColumns(-1, -3, -1)
 
-	folderNameLabel := tview.
-		NewTextView().
-		SetScrollable(false).
-		SetSize(2, 30).
-		SetTextAlign(tview.AlignCenter)
+	folderNameInputField := tview.NewInputField()
+
+	SetBorderFocusAndBlurCallbacks(folderNameInputField.Box)
+
+	folderNameInputField.
+		SetFieldBackgroundColor(Background).
+		SetTitle("Name").
+		SetTitleAlign(tview.AlignLeft).
+		SetBorder(true).
+		SetBorderColor(BoxBorder)
+
+	folderNameInputField.
+		SetChangedFunc(func(text string) {
+			appState.SelectedFolder().Name = text
+		})
 
 	sortDropdown := tview.NewDropDown().
-		SetLabel("Sort: ").
-		SetLabelWidth(7).
 		AddOption("Recent", nil).
 		AddOption("Alphabetical", nil).
-		SetFieldWidth(0).
+		SetFieldWidth(100).
 		SetFieldBackgroundColor(tcell.ColorGray).
 		SetCurrentOption(0)
+
+	sortDropdown.
+		SetTitle("Sort").
+		SetTitleAlign(tview.AlignLeft)
+
+	SetBorderFocusAndBlurCallbacks(sortDropdown.Box)
 
 	folderFlashcardSetList := tview.NewTable().SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
@@ -121,6 +134,8 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		SetFieldBackgroundColor(Background).
 		SetTitle("Search folder").
 		SetTitleAlign(tview.AlignLeft)
+
+	searchFolderInputField.SetFieldWidth(0).SetLabelWidth(0)
 
 	addFlashcardSetView := tview.NewGrid().
 		SetRows(3, -2, 3)
@@ -298,8 +313,21 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 
 	searchFolderInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
+		case tcell.KeyBacktab:
+			appState.App.SetFocus(folderNameInputField)
+			return nil
 		case tcell.KeyTab:
 			appState.App.SetFocus(sortDropdown)
+			return nil
+		}
+
+		return event
+	})
+
+	folderNameInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTab:
+			appState.App.SetFocus(searchFolderInputField)
 			return nil
 		}
 
@@ -312,24 +340,11 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 		AddItem(deleteButton, 0, 1, false)
 
 	folderView.
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(folderNameLabel, 0, 1, true).
-				AddItem(nil, 0, 1, false),
-			0, 0, 1, 1, 0, 0, false).
+		AddItem(folderNameInputField, 0, 0, 1, 1, 0, 0, false).
 		AddItem(searchFolderInputField, 0, 1, 1, 1, 0, 0, false).
-		AddItem(tview.NewBox(), 0, 2, 1, 1, 0, 0, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(sortDropdown, 0, 1, true).
-				AddItem(nil, 0, 1, false),
-			0, 3, 1, 1, 0, 0, false).
-		AddItem(folderFlashcardSetList, 1, 0, 1, 4, 0, 0, true).
-		AddItem(buttons, 2, 0, 1, 4, 0, 0, false)
+		AddItem(sortDropdown, 0, 2, 1, 1, 0, 0, false).
+		AddItem(folderFlashcardSetList, 1, 0, 1, 3, 0, 0, true).
+		AddItem(buttons, 2, 0, 1, 3, 0, 0, false)
 
 	folderPage.SetChangedFunc(func() {
 		if pg, _ := folderPage.GetFrontPage(); pg == "main" && appState.SelectedFolder() != nil {
@@ -414,7 +429,7 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 
 		filteredFolderFlashcardSetList = folderSets
 
-		folderNameLabel.SetText(fmt.Sprintf("[ %s ]", appState.SelectedFolder().Name))
+		folderNameInputField.SetText(appState.SelectedFolder().Name)
 
 		folderFlashcardSetList.Clear()
 		flashcardSetList.Clear()
