@@ -20,7 +20,10 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ["windows-latest", "ubuntu-latest", "macOS-latest"]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,7 +55,10 @@ jobs:
           fi
   test:
     name: Test
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ["windows-latest", "ubuntu-latest", "macOS-latest"]
+    runs-on: ${{ matrix.os }}
     needs: build
     steps:
       - name: Checkout
@@ -69,10 +75,10 @@ jobs:
         run: go test ./...
       - name: Run tests with coverage
         run: |
-          go test -coverprofile=coverage.out ./...
-          go tool cover -html=coverage.out -o coverage.html
+          go test -coverprofile="coverage.out" ./...
+          go tool cover -html="coverage.out" -o "coverage.html"
       - name: Upload test coverage
         uses: actions/upload-artifact@v4
         with:
-          name: go-test-coverage
+          name: go-test-coverage_${{ matrix.os }}
           path: coverage.html
