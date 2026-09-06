@@ -169,7 +169,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 
 	goToLibraryButton := NewButton("Go To Library")
 
-	goToLibrary := NewPaddedFrameAllSides(4).SetPrimitive(goToLibraryButton)
+	goToLibrary := NewPaddedFrameAllSides(2).SetPrimitive(goToLibraryButton)
 
 	goToLibrary.
 		SetBorder(true).
@@ -186,7 +186,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		SetTitleColor(BoxBorder)
 
 	main := tview.NewGrid().
-		SetRows(-1, -1, -1).
+		SetRows(-2, -2, -1).
 		SetColumns(-1, -1).
 		AddItem(recentSetsStudies, 0, 0, 1, 2, 0, 0, true).
 		AddItem(foldersTable, 1, 0, 1, 1, 0, 0, false).

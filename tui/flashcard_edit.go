@@ -352,7 +352,7 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 	flashcardEdit := tview.NewPages()
 
 	edit := tview.NewGrid().
-		SetRows(-1, -2, -12, -2)
+		SetRows(-1, -2, -11, -2)
 
 	titleInput := tview.NewInputField().
 		SetFieldBackgroundColor(Background).
