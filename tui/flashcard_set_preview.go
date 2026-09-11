@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
@@ -159,11 +158,20 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 	flashcardSetPreview := tview.NewPages()
 
 	preview := tview.NewGrid().
-		SetRows(-1, -30, -3)
+		SetRows(2, -2, -12, -2)
 
 	flashcardSetNameLabel := tview.NewTextView().
 		SetScrollable(false).
-		SetSize(2, 30)
+		SetSize(2, 0)
+
+	flashcardSetDescription := tview.NewTextView().
+		SetSize(0, 0)
+
+	SetBorderFocusAndBlurCallbacks(flashcardSetDescription.Box)
+
+	flashcardSetDescription.
+		SetTitle("Description").
+		SetTitleAlign(tview.AlignLeft)
 
 	SetBorderFocusAndBlurCallbacks(flashcardList.Box)
 
@@ -269,8 +277,9 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 
 	preview.
 		AddItem(flashcardSetNameLabel, 0, 0, 1, 1, 0, 0, false).
-		AddItem(flashcardList, 1, 0, 1, 1, 0, 0, true).
-		AddItem(buttonGroup, 2, 0, 1, 1, 0, 0, false)
+		AddItem(flashcardSetDescription, 1, 0, 1, 1, 0, 0, false).
+		AddItem(flashcardList, 2, 0, 1, 1, 0, 0, true).
+		AddItem(buttonGroup, 3, 0, 1, 1, 0, 0, false)
 
 	flashcardSetPreview.AddPage("main", preview, true, true)
 	flashcardSetPreview.AddPage("settings", settingsModal, true, false)
@@ -288,8 +297,22 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 		case tcell.KeyEnter:
 			appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout)
 			return nil
+		case tcell.KeyBacktab:
+			appState.SetFocus(flashcardSetDescription)
+			return nil
 		case tcell.KeyTab:
 			appState.SetFocus(trackProgressButton)
+			return nil
+		}
+
+		return event
+	})
+
+	flashcardSetDescription.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTab:
+			appState.SetFocus(flashcardList)
+			return nil
 		}
 
 		return event
@@ -373,7 +396,16 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 
 		flashcardList.Clear()
 
-		flashcardSetNameLabel.SetText(fmt.Sprintf("[ %s ]", appState.SelectedFlashcardSet().Name))
+		flashcardSetNameLabel.SetText(appState.SelectedFlashcardSet().Name)
+
+		var descriptionText string
+		if appState.SelectedFlashcardSet().Description == "" {
+			descriptionText = "(No description available...)"
+		} else {
+			descriptionText = appState.SelectedFlashcardSet().Description
+		}
+
+		flashcardSetDescription.SetText(descriptionText)
 
 		for i := window.Start; i <= window.End; i++ {
 			flashcardList.AddItem(
