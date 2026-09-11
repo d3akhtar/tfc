@@ -5,6 +5,8 @@ import (
 	"math/rand/v2"
 	"slices"
 	"time"
+
+	"github.com/d3akhtar/tfc/utils"
 )
 
 type FlashcardFront int
@@ -49,7 +51,7 @@ func (f FlashcardSet) String() string {
 		"○ %s | %d flashcards | Last Accessed: %s",
 		f.Name,
 		f.count(),
-		f.LastAccessed.Local().Format(time.RFC822),
+		f.LastAccessed.Local().Format(utils.TimeFormat),
 	)
 }
 
