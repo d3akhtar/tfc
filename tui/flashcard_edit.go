@@ -338,13 +338,16 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 		selectedFlashcardSet.RemoveById(fc.Id)
 
 		if appState.SelectedFlashcardSet() != nil {
+			appState.SelectedFlashcardSet().RemoveById(fc.Id)
 			err := flashcardRepository.Delete(appState.Context, fc.Id)
 			if err != nil {
 				return
 			}
 		}
 
-		lastSelectedFlashcardPrimitive = min(lastSelectedFlashcardPrimitive, len(selectedFlashcardSet.Flashcards)-1)
+		lastSelectedFlashcardPrimitive = min(lastSelectedFlashcardPrimitive-1, 0)
+
+		window.Retreat()
 
 		refreshList(window.Start)
 	}

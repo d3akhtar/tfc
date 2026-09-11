@@ -114,6 +114,7 @@ func (f *FlashcardSet) StartQuiz() {
 
 func (f *FlashcardSet) AddFlashcard(question, answer string) {
 	flashcard := Flashcard{
+		Id:             -len(f.Flashcards), // Placeholder
 		Question:       question,
 		Answer:         answer,
 		FlashcardSetId: f.Id,
@@ -121,6 +122,7 @@ func (f *FlashcardSet) AddFlashcard(question, answer string) {
 	}
 
 	f.Flashcards = append(f.Flashcards, flashcard)
+	f.shuffled = nil
 }
 
 func (f *FlashcardSet) RemoveById(id int) {
