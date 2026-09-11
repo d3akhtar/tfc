@@ -231,8 +231,11 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 		SetLabel("Shuffle").
 		SetChangedFunc(func(checked bool) {
 			appState.SelectedFlashcardSet().SetShuffle(checked)
-			appState.SelectedFlashcardSet().ResetQuizProgress()
-			quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet().Quiz)
+
+			if appState.SelectedFlashcardSet().Quiz != nil {
+				appState.SelectedFlashcardSet().ResetQuizProgress()
+				quizRepository.ReplaceQuiz(appState.Context, appState.SelectedFlashcardSet().Quiz)
+			}
 
 			window = utils.NewSlidingWindow(0, maxFlashcardsShownInPreviewFlashcardList, appState.SelectedFlashcardSet().GetFlashcards())
 
