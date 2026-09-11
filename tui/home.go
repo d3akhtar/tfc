@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/d3akhtar/tfc/app"
@@ -110,7 +109,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 
 		newFolderNameInputField.SetText("")
 		row := len(folders) - 1
-		foldersTable.SetCell(row, 0, tview.NewTableCell(fmt.Sprintf("○ %s", newFolder.Name)).SetExpansion(1))
+		foldersTable.SetCell(row, 0, tview.NewTableCell(newFolder.String()).SetExpansion(1))
 	}
 
 	newFolderForm := tview.NewForm().
@@ -270,7 +269,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		foldersTable.Clear()
 
 		for i, loadedFolder := range folders {
-			foldersTable.SetCell(i, 0, tview.NewTableCell(fmt.Sprintf("○ %s", loadedFolder.Name)).SetExpansion(1).SetTextColor(Text))
+			foldersTable.SetCell(i, 0, tview.NewTableCell(loadedFolder.String()).SetExpansion(1).SetTextColor(Text))
 		}
 
 		recentSetsStudies.Select(0, 0)
