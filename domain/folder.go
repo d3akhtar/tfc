@@ -3,6 +3,8 @@ package domain
 import (
 	"fmt"
 	"time"
+
+	"github.com/d3akhtar/tfc/utils"
 )
 
 type Folder struct {
@@ -15,7 +17,7 @@ type Folder struct {
 }
 
 func (f Folder) String() string {
-	return fmt.Sprintf("%s | %d Sets | Last Accessed: %s", f.Name, f.count(), f.LastAccessed.Local().Format(time.RFC822))
+	return fmt.Sprintf("%s | %d Sets | Last Accessed: %s", f.Name, f.count(), f.LastAccessed.Local().Format(utils.TimeFormat))
 }
 
 func (f *Folder) count() int {
