@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
@@ -448,18 +449,27 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 			numFlashcardsShownInPreviewFlashcardList = min(maxFlashcardsShownInPreviewFlashcardList, len(selectedFlashcardSet.Flashcards))
 
-			window = utils.NewSlidingWindow(0, numFlashcardsShownInPreviewFlashcardList, selectedFlashcardSet.GetFlashcards())
+			window = utils.NewSlidingWindow(
+				len(selectedFlashcardSet.Flashcards)-numFlashcardsShownInPreviewFlashcardList,
+				numFlashcardsShownInPreviewFlashcardList,
+				selectedFlashcardSet.GetFlashcards(),
+			)
 
 			for i := window.Start; i <= window.End; i++ {
 				flashcardList.AddItem(
-					newFlashcardPrimitive(window.Collection[i], i),
+					newFlashcardPrimitive(window.Collection[i], i-window.Start),
 					0,
 					1,
 					false,
 				)
+
+				activeFlashcardPrimitives[i-window.Start].Layout.SetTitle(fmt.Sprintf("%d", i+1))
 			}
 
 			flashcardEdit.HidePage("flashcard")
+
+			lastSelectedFlashcardPrimitive = numFlashcardsShownInPreviewFlashcardList - 1
+			appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout)
 		}).
 		AddButton("Cancel", func() {
 			flashcardEdit.HidePage("flashcard")
