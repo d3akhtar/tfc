@@ -27,11 +27,21 @@ func NewApp(app *tview.Application) *State {
 	views := nav.Views()
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlC:
+		revert := func() {
 			err := nav.views[nav.MostRecentlyVisitedViewName()].exit()
 			if err != nil {
 				panic(err)
+			}
+		}
+
+		switch event.Key() {
+		case tcell.KeyCtrlC:
+			revert()
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'q':
+				revert()
+				app.Stop()
 			}
 		}
 
