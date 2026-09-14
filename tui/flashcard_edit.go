@@ -64,10 +64,10 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 			SetTitleColor(FlashcardPrimitiveBorder)
 
 		question := tview.NewTextArea().
-			SetText(flashcard.Question, true)
+			SetText(flashcard.Question, false)
 
 		answer := tview.NewTextArea().
-			SetText(flashcard.Answer, true)
+			SetText(flashcard.Answer, false)
 
 		question.
 			SetBorder(true).
