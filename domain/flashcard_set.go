@@ -17,21 +17,21 @@ const (
 )
 
 type FlashcardSet struct {
-	Id            int
-	Name          string
-	Description   string
-	LastAccessed  time.Time
-	TrackProgress bool
-	Front         FlashcardFront
-	Shuffle       bool
-	ShuffleSeed   int
+	Id            int            `json:"id"`
+	Name          string         `json:"name"`
+	Description   string         `json:"description"`
+	LastAccessed  time.Time      `json:"-"`
+	TrackProgress bool           `json:"-"`
+	Front         FlashcardFront `json:"-"`
+	Shuffle       bool           `json:"-"`
+	ShuffleSeed   int            `json:"-"`
 
-	Flashcards []Flashcard
+	Flashcards []Flashcard `json:"flashcards"`
 	shuffled   []Flashcard
 
-	FlashcardCount int
+	FlashcardCount int `json:"-"`
 
-	Quiz *Quiz
+	Quiz *Quiz `json:"-"`
 }
 
 func NewFlashcardSet(name string) *FlashcardSet {
