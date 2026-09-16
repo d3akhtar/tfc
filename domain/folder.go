@@ -8,12 +8,12 @@ import (
 )
 
 type Folder struct {
-	Id            int
-	Name          string
-	FlashcardSets []FlashcardSet
-	LastAccessed  time.Time
+	Id            int            `json:"id"`
+	Name          string         `json:"name"`
+	FlashcardSets []FlashcardSet `json:"flashcardSets"`
+	LastAccessed  time.Time      `json:"-"`
 
-	FlashcardSetCount int
+	FlashcardSetCount int `json:"-"`
 }
 
 func (f Folder) String() string {

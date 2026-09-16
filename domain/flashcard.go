@@ -3,12 +3,12 @@ package domain
 import "fmt"
 
 type Flashcard struct {
-	Id       int
-	Question string
-	Answer   string
+	Id       int    `json:"-"`
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
 
-	FlashcardSetId int
-	Position       int
+	FlashcardSetId int `json:"flashcardSetId"`
+	Position       int `json:"position"`
 }
 
 func (f Flashcard) String() string {
