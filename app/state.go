@@ -37,12 +37,9 @@ func NewApp(app *tview.Application) *State {
 		switch event.Key() {
 		case tcell.KeyCtrlC:
 			revert()
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 'q':
-				revert()
-				app.Stop()
-			}
+		case tcell.KeyCtrlQ:
+			revert()
+			app.Stop()
 		}
 
 		return event
