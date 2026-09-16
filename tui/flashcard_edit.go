@@ -470,6 +470,9 @@ func InitFlashcardEditUi(appState *app.State, flashcardSetRepository flashcard_s
 
 			lastSelectedFlashcardPrimitive = numFlashcardsShownInPreviewFlashcardList - 1
 			appState.SetFocus(activeFlashcardPrimitives[lastSelectedFlashcardPrimitive].Layout)
+
+			questionInputTextArea.SetText("", true)
+			answerInputTextArea.SetText("", true)
 		}).
 		AddButton("Cancel", func() {
 			flashcardEdit.HidePage("flashcard")
