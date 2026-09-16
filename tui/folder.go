@@ -55,7 +55,7 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 	folderFlashcardSetList := tview.NewTable().SetSelectable(true, false).
 		SetSelectedFunc(func(row, _ int) {
 			pos := row
-			selectedFlashcardSet := &filteredFlashcardSetList[pos]
+			selectedFlashcardSet := filteredFolderFlashcardSetList[pos]
 			selectedFlashcardSet.LastAccessed = time.Now()
 			appState.SetSelectedFlashcardSet(selectedFlashcardSet)
 
@@ -79,6 +79,16 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 			path, ok := tinyfiledialogs.SaveFileDialog("Enter path to save folder", appState.SelectedFolder().Name, nil, "")
 			if !ok {
 				return
+			}
+
+			for i := range appState.SelectedFolder().FlashcardSets {
+				fc := appState.SelectedFolder().FlashcardSets[i]
+				flashcards, err := flashcardSetRepository.GetAllFlashcardsForSet(appState.Context, &fc)
+				if err != nil {
+					return
+				}
+
+				appState.SelectedFolder().FlashcardSets[i].Flashcards = flashcards
 			}
 
 			err := exporting.ExportFolder(appState.SelectedFolder(), fmt.Sprintf("%s.tfcf", path))
