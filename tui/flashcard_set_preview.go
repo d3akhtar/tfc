@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/d3akhtar/tfc/app"
@@ -8,9 +9,11 @@ import (
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/quiz"
 	"github.com/d3akhtar/tfc/domain"
+	"github.com/d3akhtar/tfc/exporting"
 	"github.com/d3akhtar/tfc/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/wizzymore/tinyfiledialogs"
 )
 
 type flashcardPrimitiveInfo struct {
@@ -215,6 +218,19 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 			appState.Navigation.GoToView(app.VIEW_NAMES.FlashcardEdit)
 		})
 
+	exportButton := NewButton("Export").
+		SetSelectedFunc(func() {
+			path, ok := tinyfiledialogs.SaveFileDialog("Enter path to save flashcard set", appState.SelectedFlashcardSet().Name, nil, "")
+			if !ok {
+				return
+			}
+
+			err := exporting.ExportFlashcardSet(appState.SelectedFlashcardSet(), fmt.Sprintf("%s.tfcfs", path))
+			if err != nil {
+				return
+			}
+		})
+
 	settingsButton := NewButton("Settings")
 
 	buttonGroup := tview.NewFlex().
@@ -224,6 +240,8 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 		AddItem(studyButton, 0, 3, false).
 		AddItem(nil, 2, 1, false).
 		AddItem(editButton, 0, 3, false).
+		AddItem(nil, 2, 1, false).
+		AddItem(exportButton, 0, 3, false).
 		AddItem(nil, 2, 1, false).
 		AddItem(settingsButton, 0, 1, false)
 
@@ -350,7 +368,7 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 	editButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab, tcell.KeyRight:
-			appState.SetFocus(settingsButton)
+			appState.SetFocus(exportButton)
 			return nil
 		case tcell.KeyBacktab, tcell.KeyLeft:
 			appState.SetFocus(studyButton)
@@ -360,10 +378,23 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 		return event
 	})
 
+	exportButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTab, tcell.KeyRight:
+			appState.SetFocus(settingsButton)
+			return nil
+		case tcell.KeyBacktab, tcell.KeyLeft:
+			appState.SetFocus(editButton)
+			return nil
+		}
+
+		return event
+	})
+
 	settingsButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyBacktab, tcell.KeyLeft:
-			appState.SetFocus(editButton)
+			appState.SetFocus(exportButton)
 			return nil
 		}
 
@@ -395,7 +426,7 @@ func InitFlashcardSetPreview(appState *app.State, flashcardSetRepository flashca
 		trackProgressButton.SetStyle(tcell.StyleDefault.
 			Background(col).
 			Foreground(tcell.ColorBlack)).
-			SetLabel(trackProgressButtonTextPrefix + " Track Progress")
+			SetLabel(trackProgressButtonTextPrefix + " Track")
 
 		flashcardList.Clear()
 

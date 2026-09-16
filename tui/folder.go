@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
@@ -9,8 +10,10 @@ import (
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/folder"
 	"github.com/d3akhtar/tfc/domain"
+	"github.com/d3akhtar/tfc/exporting"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/wizzymore/tinyfiledialogs"
 )
 
 func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flashcardSetRepository flashcard_set.FlashcardSetRepo) {
@@ -69,6 +72,19 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 	addFlashcardSetButton := NewButton("Add Flashcard Sets").
 		SetSelectedFunc(func() {
 			folderPage.SwitchToPage("flashcard")
+		})
+
+	exportButton := NewButton("Export").
+		SetSelectedFunc(func() {
+			path, ok := tinyfiledialogs.SaveFileDialog("Enter path to save folder", appState.SelectedFolder().Name, nil, "")
+			if !ok {
+				return
+			}
+
+			err := exporting.ExportFolder(appState.SelectedFolder(), fmt.Sprintf("%s.tfcf", path))
+			if err != nil {
+				return
+			}
 		})
 
 	sortDropdown.
@@ -271,6 +287,24 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 			appState.App.SetFocus(folderFlashcardSetList)
 			return nil
 		case tcell.KeyTab:
+			appState.App.SetFocus(exportButton)
+			return nil
+		case tcell.KeyRune:
+			if event.Rune() == '/' {
+				appState.App.SetFocus(searchFolderInputField)
+				return nil
+			}
+		}
+
+		return event
+	})
+
+	exportButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyBacktab:
+			appState.App.SetFocus(addFlashcardSetButton)
+			return nil
+		case tcell.KeyTab:
 			appState.App.SetFocus(deleteButton)
 			return nil
 		case tcell.KeyRune:
@@ -336,6 +370,8 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 
 	buttons := tview.NewFlex().
 		AddItem(addFlashcardSetButton, 0, 1, true).
+		AddItem(nil, 1, 0, false).
+		AddItem(exportButton, 0, 1, true).
 		AddItem(nil, 1, 0, false).
 		AddItem(deleteButton, 0, 1, false)
 
