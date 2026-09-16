@@ -1,14 +1,17 @@
 package tui
 
 import (
+	"strings"
 	"time"
 
 	"github.com/d3akhtar/tfc/app"
 	"github.com/d3akhtar/tfc/db/flashcard_set"
 	"github.com/d3akhtar/tfc/db/folder"
 	"github.com/d3akhtar/tfc/domain"
+	"github.com/d3akhtar/tfc/importing"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/wizzymore/tinyfiledialogs"
 )
 
 func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.FlashcardSetRepo, folderRepository folder.FolderRepo) {
@@ -166,23 +169,18 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		SetBorderColor(BoxBorder).
 		SetTitleColor(BoxBorder)
 
+	generalActionButtons := tview.NewGrid().
+		SetRows(1, -1, 1).
+		SetColumns(-1, 1, -1)
+
+	SetBorderFocusAndBlurCallbacks(generalActionButtons.Box)
+
 	goToLibraryButton := NewButton("Go To Library")
+	importButton := NewButton("Import")
 
-	goToLibrary := NewPaddedFrameAllSides(2).SetPrimitive(goToLibraryButton)
-
-	goToLibrary.
-		SetBorder(true).
-		SetFocusFunc(func() {
-			goToLibrary.SetBorderColor(Focused)
-			goToLibrary.SetTitleColor(Focused)
-		}).
-		SetBlurFunc(func() {
-			goToLibrary.SetBorderColor(BoxBorder)
-			goToLibrary.SetTitleColor(BoxBorder)
-		}).
-		SetBackgroundColor(Background).
-		SetBorderColor(BoxBorder).
-		SetTitleColor(BoxBorder)
+	generalActionButtons.
+		AddItem(goToLibraryButton, 1, 0, 1, 1, 0, 0, true).
+		AddItem(importButton, 1, 2, 1, 1, 0, 0, true)
 
 	main := tview.NewGrid().
 		SetRows(-2, -2, -1).
@@ -190,7 +188,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		AddItem(recentSetsStudies, 0, 0, 1, 2, 0, 0, true).
 		AddItem(foldersTable, 1, 0, 1, 1, 0, 0, false).
 		AddItem(create, 1, 1, 1, 1, 0, 0, false).
-		AddItem(goToLibrary, 2, 0, 1, 2, 0, 0, false)
+		AddItem(generalActionButtons, 2, 0, 1, 2, 0, 0, false)
 
 	recentSetsStudies.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
@@ -217,7 +215,7 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 	create.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
-			appState.App.SetFocus(goToLibraryButton)
+			appState.App.SetFocus(generalActionButtons)
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(foldersTable)
 		case tcell.KeyUp:
@@ -229,12 +227,16 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 		return event
 	})
 
-	goToLibraryButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	generalActionButtons.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTab:
 			appState.App.SetFocus(recentSetsStudies)
 		case tcell.KeyBacktab:
 			appState.App.SetFocus(create)
+		case tcell.KeyLeft:
+			appState.App.SetFocus(goToLibraryButton)
+		case tcell.KeyRight:
+			appState.App.SetFocus(importButton)
 		}
 
 		return event
@@ -277,6 +279,38 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 
 		return nil
 	}
+
+	importButton.SetSelectedFunc(func() {
+		path, ok := tinyfiledialogs.OpenFileDialog("Select flashcard set or folder", "", []string{"*.tfcfs", "*.tfcf"}, "tfc files (*.tfcfs, *.tfcf)", false)
+		if !ok {
+			return
+		}
+
+		if strings.HasSuffix(path, ".tfcfs") {
+			fc, err := importing.ImportFlashcardSet(path)
+			if err != nil {
+				return
+			}
+
+			fc.LastAccessed = time.Now()
+
+			flashcardSetRepository.Create(appState.Context, fc)
+		} else if strings.HasSuffix(path, ".tfcf") {
+			f, err := importing.ImportFolder(path)
+			if err != nil {
+				return
+			}
+
+			f.LastAccessed = time.Now()
+			for _, fc := range f.FlashcardSets {
+				fc.LastAccessed = time.Now()
+			}
+
+			folderRepository.Create(appState.Context, f)
+		}
+
+		refresh()
+	})
 
 	appState.Navigation.AddView(app.VIEW_NAMES.Home, home, true, refresh, nil)
 }
