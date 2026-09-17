@@ -301,10 +301,17 @@ func InitHomeUi(appState *app.State, flashcardSetRepository flashcard_set.Flashc
 				return
 			}
 
-			f.LastAccessed = time.Now()
-			for _, fc := range f.FlashcardSets {
-				fc.LastAccessed = time.Now()
+			for i, fc := range f.FlashcardSets {
+				f.FlashcardSets[i].LastAccessed = time.Now()
+				err = flashcardSetRepository.Create(appState.Context, &fc)
+				if err != nil {
+					return
+				}
+
+				f.FlashcardSets[i].Id = fc.Id
 			}
+
+			f.LastAccessed = time.Now()
 
 			folderRepository.Create(appState.Context, f)
 		}

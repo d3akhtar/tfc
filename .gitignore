@@ -39,3 +39,6 @@ tfc
 
 # db
 app.db
+
+# tfc files
+*.tfc*
