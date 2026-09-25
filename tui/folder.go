@@ -212,10 +212,19 @@ func InitFolderUi(appState *app.State, folderRepository folder.FolderRepo, flash
 			filteredFlashcardSetList = sets
 
 			for i, flashcardSet := range filteredFlashcardSetList {
+				var col tcell.Color
+				if slices.ContainsFunc(appState.SelectedFolder().FlashcardSets, func(set domain.FlashcardSet) bool {
+					return set.Id == flashcardSet.Id
+				}) {
+					col = tcell.ColorGreen
+				} else {
+					col = tcell.ColorWhite
+				}
+
 				flashcardSetList.SetCell(
 					i,
 					0,
-					tview.NewTableCell(flashcardSet.String()).SetExpansion(1),
+					&tview.TableCell{Text: flashcardSet.String(), BackgroundColor: Background, Color: col, Expansion: 1},
 				)
 			}
 		})
